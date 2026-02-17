@@ -96,7 +96,7 @@ const RegisterForm = () => {
                                     <Button
                                         onClick={signinWithGithub}
                                         variant={'outline'}
-                                        className="w-full border rounded-md p-2 flex items-center justify-center gap-2"
+                                        className="w-full border rounded-md p-2 flex items-center justify-center gap-2 "
                                         type="button"
                                     >
                                         <Image src="/logos/github.svg" alt="github" width={20} height={20} />
@@ -186,7 +186,7 @@ const RegisterForm = () => {
 
                                         <Button
                                             type="submit"
-                                            className="w-full bg-black text-white p-2 rounded-md"
+                                            className="w-full "
                                             disabled={isPending}
                                         >
                                             Sign Up

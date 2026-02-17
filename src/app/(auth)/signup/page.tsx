@@ -1,7 +1,7 @@
 import SignupForm from "@/app/features/auth/components/register-form"
+import { requireUnauth } from "@/lib/auth-utils";
 
-const SingupPage = () => {
-    
+const SingupPage = async () => {
     return (
         <>
             <SignupForm />
