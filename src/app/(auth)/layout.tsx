@@ -1,6 +1,9 @@
+import { requireUnauth } from "@/lib/auth-utils";
 import AuthLayout from "../features/auth/components/auth-layout"
 
-const Layout = ({ children }: { children: React.ReactNode }) => {
+const Layout = async ({ children }: { children: React.ReactNode }) => {
+    await requireUnauth();
+
     return (
         <AuthLayout>
             {children}

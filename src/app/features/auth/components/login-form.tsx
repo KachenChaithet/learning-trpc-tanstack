@@ -117,7 +117,7 @@ const LoginForm = () => {
                                             <FormItem>
                                                 <FormLabel>Password</FormLabel>
                                                 <FormControl>
-                                                    <Input className={'outline-none border p-1 rounded-md'} type="password" placeholder="********" {...field} />
+                                                    <Input className={'outline-none border p-1 rounded-md '} type="password" placeholder="********" {...field} />
                                                 </FormControl>
                                                 <FormMessage className="text-red-500" />
                                             </FormItem>

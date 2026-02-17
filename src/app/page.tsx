@@ -1,18 +1,15 @@
-import { headers } from "next/headers";
+import SignOut from "@/components/SignOut";
 import HomeContents from "./components/home-contents";
-import { auth } from "../lib/auth";
+import { Button } from "@/components/ui/button";
+import { requireAuth } from "@/lib/auth-utils";
 
 export default async function Home() {
-  const session = await auth.api.getSession({
-    headers: await headers()
-  })
+  await requireAuth()
 
-  if (!session) {
-    return <div>Not authenticated</div>
-  }
   return (
     <>
       <HomeContents />
+      <SignOut />
     </>
   );
 }
