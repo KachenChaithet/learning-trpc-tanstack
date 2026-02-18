@@ -9,6 +9,7 @@ import Image from "next/image"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { useForm } from "react-hook-form"
+import { toast } from "sonner"
 import z from "zod"
 
 const loginSchema = z.object({
@@ -36,12 +37,12 @@ const LoginForm = () => {
             callbackURL: "/"
         }, {
             onSuccess: () => {
-                console.log('pass');
                 router.push('/')
+                toast.success("Login Success")
 
             },
-            onError: () => {
-
+            onError: (ctx) => {
+                toast.error(ctx.error.message)
             },
         })
     }
