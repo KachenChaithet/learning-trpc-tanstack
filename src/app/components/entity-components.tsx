@@ -1,10 +1,13 @@
 import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { SearchIcon } from "lucide-react";
 
 type EntityContainerProps = {
     children: React.ReactNode
     header?: React.ReactNode
     search?: React.ReactNode
+    statusSelect?: React.ReactNode
+    ownerSelect?: React.ReactNode
 
 }
 
@@ -29,16 +32,68 @@ export const EntitySearch = ({ value, onChange, placeholder = "Search" }: Entity
     )
 }
 
+type SelectOption = {
+    label: string;
+    value: string;
+    disabled?: boolean;
+}
 
-export const EntityContainer = ({ children, header, search }: EntityContainerProps) => {
+type EntitySelectProps = {
+    value: string;
+    onChange: (value: string) => void;
+    options: SelectOption[];
+    placeholder?: string;
+    disabled?: boolean;
+}
+
+
+export const EntitySelect = ({
+    value,
+    onChange,
+    options,
+    placeholder = "Select",
+    disabled, }: EntitySelectProps) => {
+    return (
+        <div className="ml-auto w-50">
+            <Select value={value} onValueChange={onChange} disabled={disabled}>
+                <SelectTrigger className="bg-background shadow-none border-none">
+                    <SelectValue placeholder={placeholder} />
+                </SelectTrigger>
+
+                <SelectContent>
+                    {options.map((option) => (
+                        <SelectItem
+                            key={option.value}
+                            value={option.value}
+                            disabled={option?.disabled}
+                        >
+                            {option.label}
+                        </SelectItem>
+                    ))}
+                </SelectContent>
+            </Select>
+        </div>
+    )
+}
+
+export const EntityContainer = ({ children, header, search, ownerSelect, statusSelect }: EntityContainerProps) => {
     return (
         <div className="p-4 md:px-10 md:py-6 h-full w-full">
             <div className="w-full flex flex-col gap-y-8 h-full">
                 {header}
                 <div className="flex flex-col gap-y-4 h-full w-full">
-                    <div className="w-full">
-                        {search}
+                    <div className="w-full flex gap-2">
+                        <div className="flex-1">
+                            {search}
+                        </div>
 
+                        <div className="w-48">
+                            {statusSelect}
+                        </div>
+
+                        <div className="w-48">
+                            {ownerSelect}
+                        </div>
                     </div>
                     {children}
                 </div>
