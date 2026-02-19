@@ -1,6 +1,15 @@
+import { EntityContainer } from "@/app/components/entity-components"
+import HomeContents from "@/app/components/home-contents"
+import { DashboardContainer } from "@/app/features/dashboard/components/dashboard"
+import SignOut from "@/components/SignOut"
+
+
 const DashboardPage = () => {
     return (
-        <div>DashboardPage</div>
+        <DashboardContainer>
+            <HomeContents/>
+        </DashboardContainer>
     )
 }
 export default DashboardPage
+

@@ -86,7 +86,7 @@ const AppSidebar = () => {
                             href={"/"}
                             prefetch
                         >
-                            <Image src={'/logos/logoipsum-389.svg'} alt="Nodebase" width={30} height={30}  />
+                            <Image src={'/logos/logoipsum-389.svg'} alt="Nodebase" width={30} height={30} />
                             <span className="font-semibold text-sm">Planora</span>
                         </Link>
                     </SidebarMenuButton>
@@ -105,7 +105,7 @@ const AppSidebar = () => {
                                                 ? pathname === "/"
                                                 : pathname.startsWith(item.url)
                                         }
-                                        className="gap-x-4 h-10 px-4"
+                                        className="gap-x-4 h-10 px-4 "
                                         asChild
                                     >
                                         <Link href={item.url} prefetch>
