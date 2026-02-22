@@ -29,6 +29,7 @@ model User {
   @@map("user")
 }
 
+
 model Session {
   id        String   @id
   expiresAt DateTime

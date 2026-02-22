@@ -42,10 +42,16 @@ export const ProjectHeader = () => {
         <div className="w-full ">
             <div className="flex items-center justify-between">
                 <h1 className="text-2xl font-semibold">Project</h1>
-                <Button>
-                    <PlusIcon className="size-4" />
-                    <span>Add Project</span>
-                </Button>
+                <div className="space-x-2">
+                    <Button>
+                        <PlusIcon className="size-4" />
+                        <span>Add Project</span>
+                    </Button>
+                    <Button>
+                        <PlusIcon className="size-4" />
+                        <span>Join</span>
+                    </Button>
+                </div>
             </div>
         </div>
     )
