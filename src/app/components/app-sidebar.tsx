@@ -69,7 +69,6 @@ const menuItems = [
 const AppSidebar = () => {
     const router = useRouter()
     const pathname = usePathname()
-    console.log(menuItems[0]);
 
 
     return (
@@ -125,7 +124,7 @@ const AppSidebar = () => {
                     <SidebarMenuSubItem>
                         <SidebarMenuButton
                             tooltip={"Sign Out"}
-                            className="gap-x-4 h-10 px-4"
+                            className="gap-x-4 h-10 px-4 hover:cursor-pointer"
                             onClick={() => {
                                 authClient.signOut({
                                     fetchOptions: {
