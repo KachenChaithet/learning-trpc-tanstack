@@ -29,6 +29,18 @@ model User {
   @@map("user")
 }
 
+enum Role {
+  ADMIN
+  OWNER
+  MEMBER
+}
+
+model Project {
+  id String @id @default(cuid())
+  name String
+  createAt DateTime
+}
+
 model Session {
   id        String   @id
   expiresAt DateTime

@@ -2,7 +2,7 @@ import { EntityContainer } from "@/app/components/entity-components"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card"
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Separator } from "@/components/ui/separator"
 import {
@@ -336,9 +336,9 @@ export const DashboardHeader = () => {
                 {dashboardStats.map((status) => (
                     <Card key={status.title}>
                         <CardHeader className="flex items-center justify-between">
-                            <span className="text-muted-foreground font-semibold">
+                            <CardDescription className="text-muted-foreground font-semibold">
                                 {status.title}
-                            </span>
+                            </CardDescription>
                             <div className={`p-2 rounded-md ${status.iconBg}`}>
                                 <status.icon
                                     className={`w-4 h-4 ${status.iconColor}`}
@@ -346,7 +346,10 @@ export const DashboardHeader = () => {
                             </div>
                         </CardHeader>
                         <CardContent className="font-semibold text-2xl">
-                            {status.value}
+                            <CardTitle>
+                                {status.value}
+
+                            </CardTitle>
                         </CardContent>
                         <CardFooter className="text-sm text-muted-foreground">
                             {status.description}

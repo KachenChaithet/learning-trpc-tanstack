@@ -1,6 +1,10 @@
+import { MytasksContainer } from "@/app/features/mytasks/components/mytasks"
+
 const MyTasksPage = () => {
   return (
-    <div>MyTasksPage</div>
+    <MytasksContainer>
+      <></>
+    </MytasksContainer>
   )
 }
 export default MyTasksPage
