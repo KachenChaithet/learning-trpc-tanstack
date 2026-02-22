@@ -332,11 +332,11 @@ export const DashboardHeader = () => {
                 </p>
             </div>
 
-            <div className="grid grid-cols-4 w-full gap-6 mt-6">
+            <div className="grid md:grid-cols-4  w-full gap-6 mt-6">
                 {dashboardStats.map((status) => (
                     <Card key={status.title}>
                         <CardHeader className="flex items-center justify-between">
-                            <span className="text-muted-foreground">
+                            <span className="text-muted-foreground font-semibold">
                                 {status.title}
                             </span>
                             <div className={`p-2 rounded-md ${status.iconBg}`}>
@@ -410,7 +410,7 @@ type Task = {
     completed: boolean
 }
 
-export const tasks: Task[] = [
+const tasks: Task[] = [
     {
         id: "1",
         title: "Review Q4 Budget Draft",
@@ -429,6 +429,22 @@ export const tasks: Task[] = [
     },
     {
         id: "3",
+        title: "Prep for Client Presentation",
+        dueDate: "Tomorrow",
+        dueType: "tomorrow",
+        category: "Project Alpha",
+        completed: false,
+    },
+    {
+        id: "4",
+        title: "Prep for Client Presentation",
+        dueDate: "Tomorrow",
+        dueType: "tomorrow",
+        category: "Project Alpha",
+        completed: false,
+    },
+    {
+        id: "5",
         title: "Weekly Team Sync",
         dueDate: "Thursday",
         dueType: "weekday",
@@ -447,9 +463,9 @@ export const MyUpcomingTasksDashboard = () => {
                     <PlusIcon className="size-6" />
                 </Button>
             </CardHeader>
-            <CardContent className="space-y-5">
+            <CardContent className="space-y-5 max-h-100 overflow-auto">
                 {tasks.map((task) => (
-                    <Card>
+                    <Card className="" key={task.id}>
                         <CardContent className="flex gap-3 ">
                             <Checkbox className="mt-1" />
                             <div className="space-y-2">
@@ -486,7 +502,7 @@ export const MyUpcomingTasksDashboard = () => {
 export const DashboardContainer = ({ children }: { children: React.ReactNode }) => {
     return (
         <EntityContainer header={<DashboardHeader />}>
-            <div className="flex gap-10">
+            <div className="flex gap-10 flex-wrap">
                 <ActivityFeedDashboard />
                 <MyUpcomingTasksDashboard />
             </div>
