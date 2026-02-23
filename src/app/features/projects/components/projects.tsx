@@ -5,6 +5,7 @@ import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card"
 import { Progress } from "@/components/ui/progress"
 import { Banknote, CalendarIcon, EllipsisVerticalIcon, PlusIcon, ReceiptRussianRuble } from "lucide-react"
 import { useState } from "react"
+import DialogProjects, { Formtype } from "./dialog"
 
 
 
@@ -37,7 +38,9 @@ export const owners: Owners[] = [
 
 
 
+
 export const ProjectHeader = () => {
+
     return (
         <div className="w-full ">
             <div className="flex items-center justify-between">
@@ -53,7 +56,36 @@ export const ProjectHeader = () => {
                     </Button>
                 </div>
             </div>
+
         </div>
+    )
+}
+
+interface CreateProjectProps {
+    trigger?: React.ReactNode
+}
+
+
+export const CreateProjectDialog = ({ trigger }: CreateProjectProps) => {
+
+    const [dialogOpen, setDialogOpen] = useState(false)
+
+    const handleSubmit = (values: Formtype) => {
+
+    }
+
+    return (
+        <>
+            <div className="contents" onClick={() => setDialogOpen(true)} >
+                {trigger}
+            </div>
+
+            <DialogProjects
+                open={dialogOpen}
+                onOpenChange={setDialogOpen}
+                onSubmit={handleSubmit}
+            />
+        </>
     )
 }
 
@@ -165,12 +197,15 @@ export const ProjectCard = ({ title, description, avatars, progress, extraMember
 
 export const ProjectCardAdd = () => {
     return (
-        <Card className="max-w-xs border-4 border-dashed flex items-center justify-center text-muted-foreground hover:bg-gray-50">
+        <CreateProjectDialog
+            trigger={<Card className="max-w-xs border-4 border-dashed flex items-center justify-center text-muted-foreground hover:bg-gray-50">
 
-            <PlusIcon />
-            <span className="font-semibold">Create New Project</span>
-            <span className="text-sm">Starf from scratch or template</span>
-        </Card>
+                <PlusIcon />
+                <span className="font-semibold">Create New Project</span>
+                <span className="text-sm">Starf from scratch or template</span>
+            </Card>}
+        />
+
     )
 }
 
