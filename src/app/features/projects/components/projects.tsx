@@ -5,6 +5,7 @@ import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card"
 import { Progress } from "@/components/ui/progress"
 import { Banknote, CalendarIcon, EllipsisVerticalIcon, PlusIcon, ReceiptRussianRuble } from "lucide-react"
 import { useState } from "react"
+import DialogProjects, { Formtype } from "./dialog"
 
 
 
@@ -37,17 +38,60 @@ export const owners: Owners[] = [
 
 
 
+
 export const ProjectHeader = () => {
+
     return (
         <div className="w-full ">
             <div className="flex items-center justify-between">
                 <h1 className="text-2xl font-semibold">Project</h1>
-                <Button>
-                    <PlusIcon className="size-4" />
-                    <span>Add Project</span>
-                </Button>
+
+                <div className="space-x-2">
+                    <span>
+
+                        <CreateProjectDialog
+                            trigger={<Button >
+                                <PlusIcon className="size-4" />
+                                <span>Add Project</span>
+                            </Button>}
+                        />
+                    </span>
+                    <Button>
+                        <PlusIcon className="size-4" />
+                        <span>Join</span>
+                    </Button>
+                </div>
             </div>
+
         </div>
+    )
+}
+
+interface CreateProjectProps {
+    trigger?: React.ReactNode
+}
+
+
+export const CreateProjectDialog = ({ trigger }: CreateProjectProps) => {
+
+    const [dialogOpen, setDialogOpen] = useState(false)
+
+    const handleSubmit = (values: Formtype) => {
+
+    }
+
+    return (
+        <>
+            <div className="contents" onClick={() => setDialogOpen(true)} >
+                {trigger}
+            </div>
+
+            <DialogProjects
+                open={dialogOpen}
+                onOpenChange={setDialogOpen}
+                onSubmit={handleSubmit}
+            />
+        </>
     )
 }
 
@@ -159,12 +203,15 @@ export const ProjectCard = ({ title, description, avatars, progress, extraMember
 
 export const ProjectCardAdd = () => {
     return (
-        <Card className="max-w-xs border-4 border-dashed flex items-center justify-center text-muted-foreground hover:bg-gray-50">
+        <CreateProjectDialog
+            trigger={<Card className="max-w-xs border-4 border-dashed flex items-center justify-center text-muted-foreground hover:bg-gray-50">
 
-            <PlusIcon />
-            <span className="font-semibold">Create New Project</span>
-            <span className="text-sm">Starf from scratch or template</span>
-        </Card>
+                <PlusIcon />
+                <span className="font-semibold">Create New Project</span>
+                <span className="text-sm">Starf from scratch or template</span>
+            </Card>}
+        />
+
     )
 }
 
