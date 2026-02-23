@@ -54,9 +54,9 @@ export const EntitySelect = ({
     placeholder = "Select",
     disabled, }: EntitySelectProps) => {
     return (
-        <div className="ml-auto w-50">
+        <div className=" min-w-auto">
             <Select value={value} onValueChange={onChange} disabled={disabled}>
-                <SelectTrigger className="bg-background shadow-none border-none">
+                <SelectTrigger className="bg-background shadow-none ">
                     <SelectValue placeholder={placeholder} />
                 </SelectTrigger>
 
@@ -82,7 +82,7 @@ export const EntityContainer = ({ children, header, search, ownerSelect, statusS
             <div className="w-full flex flex-col gap-y-8 h-full">
                 {header}
                 <div className="flex flex-col gap-y-4 h-full w-full">
-                    <div className="w-full flex gap-2">
+                    <div className="w-full flex gap-2 flex-wrap">
                         <div className="flex-1">
                             {search}
                         </div>
