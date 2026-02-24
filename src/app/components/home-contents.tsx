@@ -2,15 +2,11 @@
 import { trpc } from "@/trpc/client"
 
 const HomeContents = () => {
-    const { data, error, isLoading } = trpc.hello.useQuery({ text: 'kachen' })
-    if (isLoading) return <>Loading...</>
-
-    if (error) return <>Error...</>
 
 
     return (
         <div>
-            {data?.greeting}
+            <h1>hello world</h1>
         </div>
     )
 }
