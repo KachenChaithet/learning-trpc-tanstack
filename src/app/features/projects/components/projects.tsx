@@ -6,6 +6,8 @@ import { Progress } from "@/components/ui/progress"
 import { Banknote, CalendarIcon, EllipsisVerticalIcon, PlusIcon, ReceiptRussianRuble } from "lucide-react"
 import { useState } from "react"
 import DialogProjects, { Formtype } from "./dialog"
+import { useCreateProject, useRemoveProject, useSuspenseProjects, useUpdateProject } from "../hooks/use-projects"
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 
 
 
@@ -48,6 +50,7 @@ export const ProjectHeader = () => {
                 <div className="space-x-2">
                     <span>
                         <CreateProjectDialog
+                            mode="create"
                             trigger={
                                 <Button>
                                     <PlusIcon className="size-4" />
@@ -69,14 +72,36 @@ export const ProjectHeader = () => {
 
 interface CreateProjectProps {
     trigger?: React.ReactNode
+    title?: string
+    description?: string
+    mode: "create" | "update"
+    projectId?: string
 }
 
 
-export const CreateProjectDialog = ({ trigger }: CreateProjectProps) => {
+export const CreateProjectDialog = ({ trigger, title, description, mode, projectId }: CreateProjectProps) => {
 
     const [dialogOpen, setDialogOpen] = useState(false)
-
+    const { mutate: createProject, isPending: isCreating } = useCreateProject()
+    const { mutate: updateProject, isPending: isUpdating } = useUpdateProject()
     const handleSubmit = (values: Formtype) => {
+        if (mode === 'create') {
+            createProject({
+                name: values.name,
+                description: values.description
+            }, {
+                onSuccess: () => {
+                    setDialogOpen(false)
+                }
+            })
+        } else if (mode === 'update') {
+            if (!projectId) return
+            updateProject({
+                id: projectId,
+                name: values.name,
+                description: values.description
+            })
+        }
 
     }
 
@@ -86,7 +111,11 @@ export const CreateProjectDialog = ({ trigger }: CreateProjectProps) => {
                 {trigger}
             </div>
 
+
             <DialogProjects
+                mode={mode}
+                title={title}
+                description={description}
                 open={dialogOpen}
                 onOpenChange={setDialogOpen}
                 onSubmit={handleSubmit}
@@ -135,15 +164,17 @@ export const ProjectOwnderSelect = () => {
 
 type ProjectCardProps = {
     title: string
-    description: string
-    progress: number
-    avatars: number
-    extraMembers: number
-    dueDate: string
+    description?: string
+    progress?: number
+    avatars?: number
+    extraMembers?: number
+    dueDate?: string
+    id: string
 }
 
 export const projects: ProjectCardProps[] = [
     {
+        "id": "1",
         "title": "Q4 Marketing Launch",
         "description": "Preparation and execution of the year-end marketing...",
         "progress": 65,
@@ -152,6 +183,7 @@ export const projects: ProjectCardProps[] = [
         "dueDate": "2023-12-15"
     },
     {
+        "id": "2",
         "title": "Website Redesign",
         "description": "UI/UX improvement and performance optimization...",
         "progress": 40,
@@ -160,6 +192,7 @@ export const projects: ProjectCardProps[] = [
         "dueDate": "2023-11-30"
     },
     {
+        "id": "3",
         "title": "Mobile App Development",
         "description": "Building core features and API integration...",
         "progress": 80,
@@ -169,7 +202,13 @@ export const projects: ProjectCardProps[] = [
     }
 ]
 
-export const ProjectCard = ({ title, description, avatars, progress, extraMembers, dueDate }: ProjectCardProps) => {
+export const ProjectCard = ({ title, description, avatars, progress, extraMembers, dueDate, id }: ProjectCardProps) => {
+    const removeProject = useRemoveProject()
+
+    const handleRemove = () => {
+        removeProject.mutate({ id: id })
+    }
+
 
     return (
         <Card className="max-w-xs">
@@ -177,7 +216,37 @@ export const ProjectCard = ({ title, description, avatars, progress, extraMember
                 <div className="w-8 h-8 bg-blue-200 flex items-center justify-center rounded-md text-blue-700">
                     <Banknote />
                 </div>
-                <EllipsisVerticalIcon />
+                <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                        <button className="p-1 rounded hover:bg-muted">
+                            <EllipsisVerticalIcon className="size-4" />
+                        </button>
+                    </DropdownMenuTrigger>
+
+                    <DropdownMenuContent align="end">
+
+                        <CreateProjectDialog
+                            mode="update"
+                            trigger={
+                                <DropdownMenuItem onSelect={(e) => {
+                                    e.preventDefault()
+                                }}>
+                                    Update
+                                </DropdownMenuItem>
+                            }
+                            title={title}
+                            description={description}
+                            projectId={id}
+                        />
+
+                        <DropdownMenuItem
+                            onClick={handleRemove}
+                            className="text-red-500"
+                        >
+                            Delete
+                        </DropdownMenuItem>
+                    </DropdownMenuContent>
+                </DropdownMenu>
             </CardHeader>
             <CardContent>
                 <h1 className="font-semibold">{title}</h1>
@@ -192,10 +261,12 @@ export const ProjectCard = ({ title, description, avatars, progress, extraMember
                     <Progress value={progress} />
 
                 </div>
-                <div className="text-muted-foreground flex items-center justify-end w-full gap-2">
-                    <CalendarIcon className="size-4" />
-                    <span className="text-sm">{new Date(dueDate).toLocaleDateString()}</span>
-                </div>
+                {dueDate && (
+                    <div className="text-muted-foreground flex items-center justify-end w-full gap-2">
+                        <CalendarIcon className="size-4" />
+                        <span className="text-sm">{new Date(dueDate).toLocaleDateString()}</span>
+                    </div>
+                )}
             </CardFooter>
         </Card>
     )
@@ -204,6 +275,7 @@ export const ProjectCard = ({ title, description, avatars, progress, extraMember
 export const ProjectCardAdd = () => {
     return (
         <CreateProjectDialog
+            mode="create"
             trigger={<Card className="max-w-xs border-4 border-dashed flex items-center justify-center text-muted-foreground hover:bg-gray-50">
 
                 <PlusIcon />
@@ -212,6 +284,25 @@ export const ProjectCardAdd = () => {
             </Card>}
         />
 
+    )
+}
+
+export const ProjectList = () => {
+    const [projects] = useSuspenseProjects()
+
+    return (
+        <>
+            {projects.map((project) => (
+                <ProjectCard
+                    key={project.id}
+                    id={project.id}
+                    title={project.name}
+                    description={project.description ?? undefined}
+                />
+
+            ))}
+            <ProjectCardAdd />
+        </>
     )
 }
 

@@ -1,26 +1,16 @@
 "use client"
-import { ProjectCard, ProjectCardAdd, ProjectContainer, projects } from "@/app/features/projects/components/projects"
+import { ProjectCard, ProjectCardAdd, ProjectContainer, ProjectList, projects } from "@/app/features/projects/components/projects"
+import { Suspense } from "react"
 
 const ProjectPage = () => {
 
     return (
         <ProjectContainer>
-            <>
-                {projects.map((project) => (
-                    <ProjectCard
-                        title={project.title}
-                        description={project.description}
-                        avatars={project.avatars}
-                        dueDate={project.dueDate}
-                        extraMembers={project.extraMembers}
-                        progress={project.progress}
-                        key={project.dueDate}
-                    />
+            <Suspense fallback={<p>Loading...</p>}>
 
-                ))}
-                <ProjectCardAdd />
-            </>
-        </ProjectContainer>
+                <ProjectList />
+            </Suspense>
+        </ProjectContainer >
     )
 }
 export default ProjectPage
