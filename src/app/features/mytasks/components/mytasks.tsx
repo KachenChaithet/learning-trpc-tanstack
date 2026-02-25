@@ -9,6 +9,8 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { PlusIcon } from "lucide-react"
 import { useState } from "react"
 import { Pagination, PaginationContent, PaginationEllipsis, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from "@/components/ui/pagination"
+import DialogTask, { Formtype } from "./dialog"
+import { useCreateTask } from "../hooks/use-tasks"
 
 
 export const MytasksHeader = () => {
@@ -21,12 +23,72 @@ export const MytasksHeader = () => {
                         Focus on what martters today. You have 4 high priority taskts.
                     </p>
                 </div>
-                <Button>
-                    <PlusIcon className="size-4" />
-                    <span>New Task</span>
-                </Button>
+                <CreateTaskDialog
+                    trigger={
+                        <Button>
+                            <PlusIcon className="size-4" />
+                            <span>New Task</span>
+                        </Button>
+                    }
+                    mode="create"
+
+                />
             </div>
         </div>
+    )
+}
+
+interface CreateTaskProps {
+    trigger?: React.ReactNode
+    title?: string
+    description?: string
+    mode: "create" | "update"
+    TaskId?: string
+}
+
+export const CreateTaskDialog = ({ trigger, title, description, mode, TaskId }: CreateTaskProps) => {
+
+    const [dialogOpen, setDialogOpen] = useState(false)
+    const { mutate: createTask, isPending: isCreating } = useCreateTask()
+    const handleSubmit = (values: Formtype) => {
+        if (mode === 'create') {
+            createTask({
+                title: values.title,
+                description: values.description,
+                assigneeId: values.assigneeId,
+                projectId: values.projectId
+            }, {
+                onSuccess: () => {
+                    setDialogOpen(false)
+                }
+            })
+        } 
+        // else if (mode === 'update') {
+        //     if (!projectId) return
+        //     updateProject({
+        //         id: projectId,
+        //         name: values.name,
+        //         description: values.description
+        //     })
+        // }
+    }
+
+    return (
+        <>
+            <div className="contents" onClick={() => setDialogOpen(true)} >
+                {trigger}
+            </div>
+
+
+            <DialogTask
+                mode={mode}
+                title={title}
+                description={description}
+                open={dialogOpen}
+                onOpenChange={setDialogOpen}
+                onSubmit={handleSubmit}
+            />
+        </>
     )
 }
 
