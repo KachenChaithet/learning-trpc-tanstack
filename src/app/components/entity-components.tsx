@@ -55,8 +55,8 @@ export const EntitySelect = ({
     disabled, }: EntitySelectProps) => {
     return (
         <div className=" min-w-auto">
-            <Select  value={value} onValueChange={onChange} disabled={disabled}>
-                <SelectTrigger className="bg-background shadow-none ">
+            <Select value={value} onValueChange={onChange} disabled={disabled}>
+                <SelectTrigger className="w-full bg-background shadow-none ">
                     <SelectValue placeholder={placeholder} />
                 </SelectTrigger>
 

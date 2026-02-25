@@ -15,6 +15,13 @@ export const TaskRouter = createTRPCRouter({
                 .optional(),
             projectId: z.string(),
             assigneeId: z.string().min(1, "Assignee is required"),
+            priority: z.enum(["LOW", "MEDIUM", "HIGH"])
+                .optional(),
+
+            status: z.enum(["TODO", "IN_PROGRESS", "DONE"])
+                .optional(),
+
+            dueDate: z.coerce.date().optional()
         }))
         .mutation(({ ctx, input }) => {
             return prisma.task.create({

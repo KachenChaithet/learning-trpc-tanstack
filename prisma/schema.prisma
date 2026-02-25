@@ -59,16 +59,33 @@ model Project {
   tasks          Task[]
 }
 
+enum TaskStatus {
+  TODO
+  IN_PROGRESS
+  DONE
+}
+
+enum TaskPriority {
+  LOW
+  MEDIUM
+  HIGH
+}
+
 model Task {
   id          String  @id @default(cuid())
   title       String
   description String?
+
+  priority TaskPriority @default(MEDIUM)
+  status   TaskStatus   @default(TODO)
 
   projectId String
   project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
 
   assigneeId String?
   assignee   User?   @relation("UserTasks", fields: [assigneeId], references: [id])
+
+  dueDate DateTime?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
