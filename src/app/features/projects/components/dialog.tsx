@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
+import { Textarea } from "@/components/ui/textarea"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { PlusIcon } from "lucide-react"
 import { useEffect } from "react"
@@ -86,7 +87,12 @@ const DialogProjects = ({ open, onOpenChange, onSubmit, title, description, mode
                             <FormItem>
                                 <FormLabel>Project Desription</FormLabel>
                                 <FormControl>
-                                    <Input placeholder="Project Desription..." {...field} />
+                                 
+                                    <Textarea
+                                        placeholder="Describe the project..."
+                                        className="min-h-30"
+                                        {...field}
+                                    />
                                 </FormControl>
                                 <FormDescription>
                                     Briefly describe the purpose or goals of this project.
