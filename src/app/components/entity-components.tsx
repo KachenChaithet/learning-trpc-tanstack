@@ -55,12 +55,12 @@ export const EntitySelect = ({
     disabled, }: EntitySelectProps) => {
     return (
         <div className=" min-w-auto">
-            <Select value={value} onValueChange={onChange} disabled={disabled}>
+            <Select  value={value} onValueChange={onChange} disabled={disabled}>
                 <SelectTrigger className="bg-background shadow-none ">
                     <SelectValue placeholder={placeholder} />
                 </SelectTrigger>
 
-                <SelectContent>
+                <SelectContent >
                     {options.map((option) => (
                         <SelectItem
                             key={option.value}
