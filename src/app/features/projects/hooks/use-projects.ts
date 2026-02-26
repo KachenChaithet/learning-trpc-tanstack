@@ -2,8 +2,12 @@ import { trpc } from "@/trpc/client"
 import { useQueryClient, useSuspenseQuery } from "@tanstack/react-query"
 import { toast } from "sonner"
 
-export const useSuspenseProjects = () => {
-    return trpc.projects.getMany.useSuspenseQuery()
+export const useSuspenseProjectsMine = () => {
+    return trpc.projects.getMine.useSuspenseQuery()
+}
+
+export const useSuspenseProjectsPublic = () => {
+    return trpc.projects.getPublic.useSuspenseQuery()
 }
 
 export const useCreateProject = () => {
@@ -12,7 +16,7 @@ export const useCreateProject = () => {
     return trpc.projects.create.useMutation({
         onSuccess: async (data) => {
             toast.success(`Project "${data.name}"`)
-            await utils.projects.getMany.invalidate()
+            await utils.projects.getMine.invalidate()
         },
         onError: (err) => {
             toast.error(err.message)
@@ -25,7 +29,7 @@ export const useRemoveProject = () => {
     return trpc.projects.remove.useMutation({
         onSuccess: async (data) => {
             toast.success(`Delete Project "${data.name}"`)
-            await utils.projects.getMany.invalidate()
+            await utils.projects.getMine.invalidate()
         },
         onError: (err) => {
             toast.error(err.message)
@@ -38,7 +42,7 @@ export const useUpdateProject = () => {
     return trpc.projects.update.useMutation({
         onSuccess: async (data) => {
             toast.success(`Update Project "${data.name}"`)
-            await utils.projects.getMany.invalidate()
+            await utils.projects.getMine.invalidate()
         },
         onError: (err) => {
             toast.error(err.message)
