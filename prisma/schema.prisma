@@ -50,10 +50,17 @@ model ProjectMember {
   @@unique([userId, projectId])
 }
 
+enum ProjectVisibility {
+  PUBLIC
+  PRIVATE
+}
+
 model Project {
   id          String  @id @default(cuid())
   name        String
   description String?
+
+  visibility ProjectVisibility @default(PRIVATE)
 
   projectMembers ProjectMember[]
   tasks          Task[]

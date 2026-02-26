@@ -29,21 +29,27 @@ export const TaskRouter = createTRPCRouter({
                     title: input.title,
                     projectId: input.projectId,
                     assigneeId: input.assigneeId,
-                    ...(input.description && { description: input.description })
+                    ...(input.description && { description: input.description }),
+                    dueDate: input.dueDate,
+                    status: input.status,
+                    priority: input.priority
                 }
             })
         }),
-    // getMany: protectedProcedure.query(({ ctx }) => {
-    //     return prisma.project.findMany({
-    //         where: {
-    //             projectMembers: {
-    //                 some: {
-    //                     userId: ctx.user.id
-    //                 }
-    //             }
-    //         }
-    //     })
-    // }),
+    getMany: protectedProcedure.query(({ ctx }) => {
+        return prisma.task.findMany({
+            where: {
+                assigneeId: ctx.user.id
+            },
+            include: {
+                project: {
+                    select: {
+                        name: true
+                    }
+                }
+            }
+        })
+    }),
     // remove: protectedProcedure
     //     .input(z.object({ id: z.string() }))
     //     .mutation(({ ctx, input }) => {

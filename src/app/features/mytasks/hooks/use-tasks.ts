@@ -13,3 +13,7 @@ export const useCreateTask = () => {
         }
     })
 }
+
+export const useSuspenseTasks = () => {
+    return trpc.tasks.getMany.useSuspenseQuery()
+}

@@ -23,8 +23,8 @@ const formSchema = z.object({
     ,
     description: z.string()
         .max(500, "Description too long")
-        .optional()
-    , projectId: z.string(),
+        .optional(),
+    projectId: z.string().min(1, "Selected Project is required"),
     assigneeId: z.string().min(1, "Assignee is required"),
     priority: z.enum(["LOW", "MEDIUM", "HIGH"])
         .optional(),
@@ -58,7 +58,6 @@ const DialogTask = ({ open, onOpenChange, onSubmit, title, description, mode }: 
             dueDate: undefined,
             priority: "LOW",
             status: "TODO",
-
         }
     })
 
@@ -70,14 +69,17 @@ const DialogTask = ({ open, onOpenChange, onSubmit, title, description, mode }: 
     }
 
     useEffect(() => {
-        if (open) {
+        if (open && mode === "update") {
             form.reset({
                 title: title ?? "",
-                description: description ?? ""
+                description: description ?? "",
+                assigneeId: "",
+                projectId: "",
+                dueDate: undefined,
+                priority: "LOW",
             })
         }
     }, [open, title, description, form])
-
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent>
@@ -203,9 +205,10 @@ const DialogTask = ({ open, onOpenChange, onSubmit, title, description, mode }: 
                                     <EntitySelect
                                         onChange={field.onChange}
                                         value={field.value}
+
                                         options={[
                                             { label: "todo", value: "TODO" },
-                                            { label: "in progress", value: "IN_PROGRESS" },
+                                            { label: "in-progress", value: "IN_PROGRESS" },
                                             { label: "done", value: "DONE" }
                                         ]}
                                         placeholder="Choose project"
