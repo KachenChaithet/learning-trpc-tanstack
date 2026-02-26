@@ -20,10 +20,10 @@ interface EntitySearchProps {
 
 export const EntitySearch = ({ value, onChange, placeholder = "Search" }: EntitySearchProps) => {
     return (
-        <div className="relative ml-auto ">
+        <div className="relative w-full ">
             <SearchIcon className="size-3.5 absolute left-3 top-1/2 -grain -translate-y-1/2 text-muted-foreground" />
             <Input
-                className=" bg-background shadow-none border-none pl-8"
+                className=" bg-background shadow-none  pl-8"
                 placeholder={placeholder}
                 value={value}
                 onChange={(e) => onChange(e.target.value)}
@@ -55,8 +55,8 @@ export const EntitySelect = ({
     disabled, }: EntitySelectProps) => {
     return (
         <div className=" min-w-auto">
-            <Select  value={value} onValueChange={onChange} disabled={disabled}>
-                <SelectTrigger className="bg-background shadow-none ">
+            <Select value={value} onValueChange={onChange} disabled={disabled}>
+                <SelectTrigger className="w-full bg-background shadow-none ">
                     <SelectValue placeholder={placeholder} />
                 </SelectTrigger>
 

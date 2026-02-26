@@ -9,6 +9,8 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { PlusIcon } from "lucide-react"
 import { useState } from "react"
 import { Pagination, PaginationContent, PaginationEllipsis, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from "@/components/ui/pagination"
+import DialogTask, { Formtype } from "./dialog"
+import { useCreateTask, useSuspenseTasks } from "../hooks/use-tasks"
 
 
 export const MytasksHeader = () => {
@@ -21,12 +23,77 @@ export const MytasksHeader = () => {
                         Focus on what martters today. You have 4 high priority taskts.
                     </p>
                 </div>
-                <Button>
-                    <PlusIcon className="size-4" />
-                    <span>New Task</span>
-                </Button>
+                <CreateTaskDialog
+                    trigger={
+                        <Button>
+                            <PlusIcon className="size-4" />
+                            <span>New Task</span>
+                        </Button>
+                    }
+                    mode="create"
+
+                />
             </div>
         </div>
+    )
+}
+
+interface CreateTaskProps {
+    trigger?: React.ReactNode
+    title?: string
+    description?: string
+    mode: "create" | "update"
+    TaskId?: string
+}
+
+export const CreateTaskDialog = ({ trigger, title, description, mode, TaskId }: CreateTaskProps) => {
+
+    const [dialogOpen, setDialogOpen] = useState(false)
+    const { mutate: createTask, isPending: isCreating } = useCreateTask()
+    const handleSubmit = (values: Formtype) => {
+        if (mode === 'create') {
+
+            createTask({
+                title: values.title,
+                description: values.description,
+                assigneeId: values.assigneeId,
+                projectId: values.projectId,
+                dueDate: values.dueDate,
+                priority: values.priority,
+                status: values.status,
+
+            }, {
+                onSuccess: () => {
+                    setDialogOpen(false)
+                }
+            })
+        }
+        // else if (mode === 'update') {
+        //     if (!projectId) return
+        //     updateProject({
+        //         id: projectId,
+        //         name: values.name,
+        //         description: values.description
+        //     })
+        // }
+    }
+
+    return (
+        <>
+            <div className="contents" onClick={() => setDialogOpen(true)} >
+                {trigger}
+            </div>
+
+
+            <DialogTask
+                mode={mode}
+                title={title}
+                description={description}
+                open={dialogOpen}
+                onOpenChange={setDialogOpen}
+                onSubmit={handleSubmit}
+            />
+        </>
     )
 }
 
@@ -160,12 +227,13 @@ const tasks = [
 ]
 
 const PRIORITY_COLOR: Record<string, string> = {
-    high: "bg-red-500",
-    medium: "bg-blue-500",
-    low: "bg-gray-300",
+    HiGH: "bg-red-500",
+    MEDIUM: "bg-blue-500",
+    Low: "bg-gray-300",
 }
 
 export const MyTasksTable = () => {
+    const [tasks] = useSuspenseTasks()
 
     return (
         <Card>
@@ -182,19 +250,33 @@ export const MyTasksTable = () => {
                     </TableRow>
                 </TableHeader>
                 <TableBody>
-                    {tasks.map((task) => (
-                        <TableRow className="h-12" key={task.id}>
-                            <TableCell ><Checkbox /></TableCell>
-                            <TableCell className="font-semibold">{task.taskName}</TableCell>
-                            <TableCell>{task.project}</TableCell>
-                            <TableCell className="space-x-2">
-                                <span className={`inline-block w-2.5 h-2.5 rounded-full ${PRIORITY_COLOR[task.priority]}`}></span>
-                                <span>{task.priority}</span>
+                    {tasks.length === 0 ? (
+                        <TableRow>
+                            <TableCell colSpan={6} className="text-center py-6 text-muted-foreground">
+                                Not Found
                             </TableCell>
-                            <TableCell>{new Date(task.dueDate).toLocaleDateString()}</TableCell>
-                            <TableCell>{task.status}</TableCell>
                         </TableRow>
-                    ))}
+                    ) : (
+                        tasks.map((task) => (
+                            <TableRow className="h-12" key={task.id}>
+                                <TableCell><Checkbox /></TableCell>
+                                <TableCell className="font-semibold">{task.title}</TableCell>
+                                <TableCell>{task.project?.name}</TableCell>
+                                <TableCell className="space-x-2">
+                                    <span
+                                        className={`inline-block w-2.5 h-2.5 rounded-full ${PRIORITY_COLOR[task.priority]}`}
+                                    ></span>
+                                    <span>{task.priority}</span>
+                                </TableCell>
+                                <TableCell>
+                                    {task.dueDate
+                                        ? new Date(task.dueDate).toLocaleDateString()
+                                        : "Nothing"}
+                                </TableCell>
+                                <TableCell>{task.status}</TableCell>
+                            </TableRow>
+                        ))
+                    )}
                 </TableBody>
             </Table>
         </Card>

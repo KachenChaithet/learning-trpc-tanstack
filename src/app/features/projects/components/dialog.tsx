@@ -98,7 +98,6 @@ const DialogProjects = ({ open, onOpenChange, onSubmit, title, description, mode
                             <FormItem>
                                 <FormLabel>Project Desription</FormLabel>
                                 <FormControl>
-
                                     <Textarea
                                         placeholder="Describe the project..."
                                         className="min-h-30"
