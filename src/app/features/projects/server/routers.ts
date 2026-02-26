@@ -13,13 +13,16 @@ export const ProjectRouter = createTRPCRouter({
             ,
             description: z.string()
                 .max(500, "Description too long")
-                .optional()
+                .optional(),
+            visibility: z.enum(["PRIVATE", "PUBLIC"])
+
         }))
         .mutation(({ ctx, input }) => {
             return prisma.project.create({
                 data: {
                     name: input.name,
                     description: input.description,
+                    visibility: input.visibility,
                     projectMembers: {
                         create: {
                             userId: ctx.user.id,
@@ -29,12 +32,40 @@ export const ProjectRouter = createTRPCRouter({
                 }
             })
         }),
-    getMany: protectedProcedure.query(({ ctx }) => {
+    getMine: protectedProcedure.query(({ ctx }) => {
         return prisma.project.findMany({
             where: {
                 projectMembers: {
                     some: {
                         userId: ctx.user.id
+                    }
+                },
+            }
+        })
+    }),
+    getPublic: protectedProcedure.query(({ ctx }) => {
+        return prisma.project.findMany({
+            where: {
+                visibility: 'PUBLIC',
+                NOT: {
+                    projectMembers: {
+                        some: {
+                            userId: ctx.user.id
+                        }
+                    }
+                }
+            },
+            include: {
+                projectMembers: {
+                    where: {
+                        role: "OWNER"
+                    },
+                    select: {
+                        user: {
+                            select: {
+                                name: true
+                            }
+                        }
                     }
                 }
             }
@@ -42,11 +73,24 @@ export const ProjectRouter = createTRPCRouter({
     }),
     remove: protectedProcedure
         .input(z.object({ id: z.string() }))
-        .mutation(({ ctx, input }) => {
-            return prisma.project.delete({
+        .mutation(async ({ ctx, input }) => {
+            const project = await prisma.project.findFirst({
                 where: {
                     id: input.id,
+                    projectMembers: {
+                        some: {
+                            userId: ctx.user.id,
+                            role: 'OWNER'
+                        }
+                    }
                 }
+            })
+            if (!project) {
+                throw new TRPCError({ code: "FORBIDDEN" })
+            }
+
+            return prisma.project.delete({
+                where: { id: input.id }
             })
         }),
 
@@ -58,7 +102,9 @@ export const ProjectRouter = createTRPCRouter({
                 .max(100, "Project too long"),
             description: z.string()
                 .max(500, "Description too long")
-                .optional()
+                .optional(),
+            visibility: z.enum(["PRIVATE", "PUBLIC"])
+
         }))
         .mutation(async ({ ctx, input }) => {
             const project = await prisma.project.findFirst({
@@ -66,7 +112,8 @@ export const ProjectRouter = createTRPCRouter({
                     id: input.id,
                     projectMembers: {
                         some: {
-                            userId: ctx.user.id
+                            userId: ctx.user.id,
+                            role: { in: ['OWNER', "MEMBER", 'ADMIN'] }
                         }
                     }
                 }
@@ -80,7 +127,8 @@ export const ProjectRouter = createTRPCRouter({
                 },
                 data: {
                     name: input.name,
-                    description: input.description
+                    description: input.description,
+                    visibility: input.visibility
                 }
             })
         })
