@@ -23,13 +23,26 @@ export const TaskRouter = createTRPCRouter({
 
             dueDate: z.coerce.date().optional()
         }))
-        .mutation(({ ctx, input }) => {
+        .mutation(async ({ ctx, input }) => {
+            const isMember = await prisma.projectMember.findFirst({
+                where: {
+                    projectId: input.projectId,
+                    userId: ctx.user.id
+                }
+            })
+
+            if (!isMember) {
+                throw new TRPCError({ code: "FORBIDDEN" })
+            }
+
             return prisma.task.create({
                 data: {
                     title: input.title,
                     projectId: input.projectId,
                     assigneeId: input.assigneeId,
-                    ...(input.description && { description: input.description }),
+                    ...(input.description !== undefined && {
+                        description: input.description
+                    }),
                     dueDate: input.dueDate,
                     status: input.status,
                     priority: input.priority

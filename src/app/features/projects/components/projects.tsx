@@ -3,9 +3,9 @@ import { EntityContainer, EntitySearch, EntitySelect } from "@/app/components/en
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card"
 import { Progress } from "@/components/ui/progress"
-import { Banknote, CalendarIcon, EllipsisVerticalIcon, PlusIcon, ReceiptRussianRuble } from "lucide-react"
+import { Banknote, CalendarIcon, Clock, EllipsisVerticalIcon, FileClock, PlusIcon, ReceiptRussianRuble, UserPlusIcon } from "lucide-react"
 import { Suspense, useState } from "react"
-import DialogProjects, { DialogProjectJoin, Formtype } from "./dialog"
+import DialogProjects, { DialogProjectJoin, DialogProjectRequest, Formtype } from "./dialog"
 import { useCreateProject, useRemoveProject, useSuspenseProjectsMine, useUpdateProject } from "../hooks/use-projects"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { Skeleton } from "@/components/ui/skeleton"
@@ -66,8 +66,18 @@ export const ProjectHeader = () => {
                         <ProjectJoin
                             trigger={
                                 <Button>
-                                    <PlusIcon className="size-4" />
+                                    <UserPlusIcon className="size-4" />
                                     <span>Join</span>
+                                </Button>
+                            }
+                        />
+                    </span>
+                    <span>
+                        <ProjectRequest
+                            trigger={
+                                <Button>
+                                    <FileClock className="size-4" />
+                                    <span>Request</span>
                                 </Button>
                             }
                         />
@@ -155,6 +165,28 @@ export const ProjectJoin = ({ trigger }: ProjectJoinProps) => {
             <Suspense fallback={<Spinner />}>
                 {dialogOpen && (
                     <DialogProjectJoin
+                        open={dialogOpen}
+                        onOpenChange={setDialogOpen}
+                    />
+                )}
+            </Suspense>
+        </>
+    )
+}
+
+export const ProjectRequest = ({ trigger }: ProjectJoinProps) => {
+    const [dialogOpen, setDialogOpen] = useState(false)
+
+
+    return (
+        <>
+            <div className="contents" onClick={() => setDialogOpen(true)} >
+                {trigger}
+            </div>
+
+            <Suspense fallback={<Spinner />}>
+                {dialogOpen && (
+                    <DialogProjectRequest
                         open={dialogOpen}
                         onOpenChange={setDialogOpen}
                     />

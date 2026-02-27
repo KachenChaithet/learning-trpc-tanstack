@@ -2,19 +2,20 @@
 
 import { EntitySearch } from "@/app/components/entity-components"
 import { Button } from "@/components/ui/button"
-import { Card } from "@/components/ui/card"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
 import { zodResolver } from "@hookform/resolvers/zod"
-import { ArchiveIcon, PlusIcon, UserPlus, UserPlusIcon } from "lucide-react"
+import { ArchiveIcon, FileClock, PlusIcon, UserPlus, UserPlusIcon } from "lucide-react"
 import type { LucideIcon } from "lucide-react"
 import { useEffect, useState } from "react"
 import { useForm } from "react-hook-form"
 import z from "zod"
-import { useSuspenseProjectsPublic } from "../hooks/use-projects"
+import { useRequestCancelJoinProject, useRequestJoinProject, useSuspenseProjectJoinRequests, useSuspenseProjectsPublic } from "../hooks/use-projects"
+import Image from "next/image"
 
 const formSchema = z.object({
     name: z.string()
@@ -164,30 +165,35 @@ interface PropsJoin {
     onOpenChange: (open: boolean) => void
 }
 
-const projectCard = [
-    { iconProject: ArchiveIcon, projectName: 'Marketing Redesign', owner: 'Alex Rivera' }
-]
+
 
 interface ListProjectCardProps {
     Icon: LucideIcon
     projectName: string
+    projectId: string
     owner: string | undefined
+    status: string
 }
-const ListProjectCard = ({ Icon, projectName, owner }: ListProjectCardProps) => {
+const ListProjectCard = ({ Icon, projectName, owner, projectId, status }: ListProjectCardProps) => {
+    const { mutate, isPending } = useRequestJoinProject()
 
-
+    const { mutate: cancelMutate, isPending: isCancelPending } = useRequestCancelJoinProject()
+    const handleClick = () => {
+        if (status === "PENDING") {
+            cancelMutate({ projectId })
+        } else {
+            mutate({ projectId })
+        }
+    }
     return (
         <Card className="w-full p-2">
             <div className="flex items-center justify-between">
-                {/* LEFT SIDE */}
                 <div className="flex items-center gap-3">
 
-                    {/* Icon circle */}
                     <div className="flex items-center justify-center size-10 rounded-full bg-muted">
                         <Icon className="size-5 text-primary" />
                     </div>
 
-                    {/* Text */}
                     <div>
                         <p className="font-medium text-sm">{projectName}</p>
                         <p className="text-xs text-muted-foreground ">
@@ -197,20 +203,29 @@ const ListProjectCard = ({ Icon, projectName, owner }: ListProjectCardProps) => 
 
                 </div>
 
-                {/* RIGHT SIDE BUTTON */}
-                <Button size="sm">
-                    Send Request
+                <Button
+                    size="sm"
+                    disabled={isPending || isCancelPending}
+                    onClick={handleClick}
+                >
+                    {status === "PENDING"
+                        ? "Cancel Request"
+                        : isPending
+                            ? "Sending..."
+                            : "Send Request"}
                 </Button>
 
             </div>
-        </Card>
+        </Card >
     )
 }
+
 
 
 export const DialogProjectJoin = ({ open, onOpenChange }: PropsJoin) => {
     const [searchTerm, setSearchTerm] = useState('')
     const [projectsPublic] = useSuspenseProjectsPublic()
+
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
@@ -233,13 +248,111 @@ export const DialogProjectJoin = ({ open, onOpenChange }: PropsJoin) => {
                         {projectsPublic.map((project) => (
                             <ListProjectCard
                                 key={project.id}
+                                projectId={project.id}
                                 Icon={ArchiveIcon}
-                                owner={project.projectMembers[0]?.user?.name ?? "Unknown owner"}
+                                owner={project.owner ?? undefined}
                                 projectName={project.name}
+                                status={project.JoinRequestStatus}
                             />
                         ))}
                     </div>
                 </DialogFooter>
+            </DialogContent>
+        </Dialog>
+    )
+}
+
+
+interface PropsRequest {
+    open: boolean
+    onOpenChange: (open: boolean) => void
+}
+
+const projectCard = [
+    { ImageProfile: 'https://png.pngtree.com/png-vector/20231019/ourmid/pngtree-user-profile-avatar-png-image_10211467.png', userName: 'Kachen Chiyathet', projectName: 'Marketing Redesign' },
+    { ImageProfile: 'https://png.pngtree.com/png-vector/20231019/ourmid/pngtree-user-profile-avatar-png-image_10211467.png', userName: 'Kachen Chiyathet', projectName: 'Marketing Art' },
+    { ImageProfile: 'https://png.pngtree.com/png-vector/20231019/ourmid/pngtree-user-profile-avatar-png-image_10211467.png', userName: 'Kachen Chiyathet', projectName: 'Marketing computer' },
+    { ImageProfile: 'https://png.pngtree.com/png-vector/20231019/ourmid/pngtree-user-profile-avatar-png-image_10211467.png', userName: 'Kachen Chiyathet', projectName: 'Marketing 2' },
+    { ImageProfile: 'https://png.pngtree.com/png-vector/20231019/ourmid/pngtree-user-profile-avatar-png-image_10211467.png', userName: 'Kachen Chiyathet', projectName: 'Marketing 21' },
+]
+
+interface projectCardRequestProps {
+    ImageProfile: string
+    userName: string
+    projectName: string
+}
+
+const ProjectCardRequest = ({ ImageProfile, userName, projectName }: projectCardRequestProps) => {
+    return (
+        <Card className="w-full p-2">
+            <div className="flex items-center justify-between">
+                <div className="flex items-center">
+                    <Image src={ImageProfile} alt='User profile' width={50} height={50} className="rounded-full" />
+
+                    <div className="">
+                        <p className="text-sm font-semibold">{userName}</p>
+                        <p className="text-xs text-muted-foreground ">wants to join {projectName}</p>
+                    </div>
+                </div>
+
+                <div className="flex gap-2">
+                    <Button variant={'outline'}>
+                        Reject
+                    </Button>
+                    <Button>
+                        Accept
+                    </Button>
+                </div>
+
+            </div>
+        </Card>
+    )
+}
+
+
+
+export const DialogProjectRequest = ({ open, onOpenChange }: PropsRequest) => {
+    const [searchTerm, setSearchTerm] = useState('')
+    const [joinRequests] = useSuspenseProjectJoinRequests()
+
+    return (
+        <Dialog open={open} onOpenChange={onOpenChange}>
+            <DialogContent className="sm:max-w-lg">
+                <DialogHeader>
+                    <DialogTitle className="flex items-center gap-2 text-base">
+                        <FileClock className="size-4 text-primary" />
+                        Manage Join Requests
+                    </DialogTitle>
+                </DialogHeader>
+
+                {/* Search */}
+                <div className="mt-4">
+                    <EntitySearch
+                        onChange={setSearchTerm}
+                        value={searchTerm}
+                        placeholder="Search by project or owner..."
+                    />
+                </div>
+
+                {/* List Section */}
+                <div className="mt-6">
+                    <div className="flex items-center justify-between mb-3">
+                        <p className="text-xs text-muted-foreground">
+                            {joinRequests.length} Pending Requests
+                        </p>
+                    </div>
+
+                    <div className="space-y-3 max-h-87.5 overflow-y-auto pr-1">
+                        {joinRequests.map((request) => (
+                            <ProjectCardRequest
+                                key={request.id}
+                                ImageProfile={'https://png.pngtree.com/png-vector/20231019/ourmid/pngtree-user-profile-avatar-png-image_10211467.png'}
+                                projectName={request.projectName}
+                                userName={request.userName ?? "Unknown"}
+                            />
+                        ))}
+                    </div>
+                </div>
             </DialogContent>
         </Dialog>
     )
