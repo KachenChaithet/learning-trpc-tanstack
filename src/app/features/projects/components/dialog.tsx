@@ -14,7 +14,7 @@ import type { LucideIcon } from "lucide-react"
 import { useEffect, useState } from "react"
 import { useForm } from "react-hook-form"
 import z from "zod"
-import { useRequestCancelJoinProject, useRequestJoinProject, useSuspenseProjectJoinRequests, useSuspenseProjectsPublic } from "../hooks/use-projects"
+import { useApproveJoinRequest, useRejectJoinRequest, useRequestCancelJoinProject, useRequestJoinProject, useSuspenseProjectJoinRequests, useSuspenseProjectsPublic } from "../hooks/use-projects"
 import Image from "next/image"
 
 const formSchema = z.object({
@@ -172,8 +172,10 @@ interface ListProjectCardProps {
     projectName: string
     projectId: string
     owner: string | undefined
-    status: string
+    status: "APPROVED" | "REJECTED" | "PENDING"
 }
+
+
 const ListProjectCard = ({ Icon, projectName, owner, projectId, status }: ListProjectCardProps) => {
     const { mutate, isPending } = useRequestJoinProject()
 
@@ -183,6 +185,29 @@ const ListProjectCard = ({ Icon, projectName, owner, projectId, status }: ListPr
             cancelMutate({ projectId })
         } else {
             mutate({ projectId })
+        }
+    }
+
+    const getVariant = () => {
+        if (status === 'APPROVED') return "secondary"
+        if (status === 'REJECTED') return "destructive"
+        if (status === "PENDING") return "outline"
+        return "default"
+    }
+
+    const getLabel = () => {
+        if (isPending) return "Sending..."
+        if (isCancelPending) return "Cancelling..."
+
+        switch (status) {
+            case "PENDING":
+                return "Cancel Request"
+            case "APPROVED":
+                return "You are a member"
+            case "REJECTED":
+                return "Request Rejected"
+            default:
+                return "Send Request"
         }
     }
     return (
@@ -205,14 +230,16 @@ const ListProjectCard = ({ Icon, projectName, owner, projectId, status }: ListPr
 
                 <Button
                     size="sm"
-                    disabled={isPending || isCancelPending}
+                    variant={getVariant()}
+                    disabled={
+                        isPending ||
+                        isCancelPending ||
+                        status === "APPROVED" ||
+                        status === 'REJECTED'
+                    }
                     onClick={handleClick}
                 >
-                    {status === "PENDING"
-                        ? "Cancel Request"
-                        : isPending
-                            ? "Sending..."
-                            : "Send Request"}
+                    {getLabel()}
                 </Button>
 
             </div>
@@ -280,9 +307,13 @@ interface projectCardRequestProps {
     ImageProfile: string
     userName: string
     projectName: string
+    RequestId: string
 }
 
-const ProjectCardRequest = ({ ImageProfile, userName, projectName }: projectCardRequestProps) => {
+const ProjectCardRequest = ({ ImageProfile, userName, projectName, RequestId }: projectCardRequestProps) => {
+
+    const { mutate: approveJoin, isPending: isApproving } = useApproveJoinRequest()
+    const { mutate: rejectJoin, isPending: isRejecting } = useRejectJoinRequest()
     return (
         <Card className="w-full p-2">
             <div className="flex items-center justify-between">
@@ -296,10 +327,10 @@ const ProjectCardRequest = ({ ImageProfile, userName, projectName }: projectCard
                 </div>
 
                 <div className="flex gap-2">
-                    <Button variant={'outline'}>
+                    <Button variant={'outline'} onClick={() => rejectJoin({ requestId: RequestId })} disabled={isRejecting}>
                         Reject
                     </Button>
-                    <Button>
+                    <Button onClick={() => approveJoin({ requestId: RequestId })} disabled={isApproving}>
                         Accept
                     </Button>
                 </div>
@@ -349,6 +380,7 @@ export const DialogProjectRequest = ({ open, onOpenChange }: PropsRequest) => {
                                 ImageProfile={'https://png.pngtree.com/png-vector/20231019/ourmid/pngtree-user-profile-avatar-png-image_10211467.png'}
                                 projectName={request.projectName}
                                 userName={request.userName ?? "Unknown"}
+                                RequestId={request.id}
                             />
                         ))}
                     </div>

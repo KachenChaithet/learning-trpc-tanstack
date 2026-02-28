@@ -35,7 +35,12 @@ export const useRemoveProject = () => {
             await utils.projects.getMine.invalidate()
         },
         onError: (err) => {
-            toast.error(err.message)
+            if (err.data?.code === "FORBIDDEN") {
+                toast.error('You do not have permission to update this project.')
+            } else {
+                toast.error(err.message)
+
+            }
         }
     })
 }
@@ -48,7 +53,12 @@ export const useUpdateProject = () => {
             await utils.projects.getMine.invalidate()
         },
         onError: (err) => {
-            toast.error(err.message)
+            if (err.data?.code === "FORBIDDEN") {
+                toast.error('You do not have permission to update this project.')
+            } else {
+                toast.error(err.message)
+
+            }
         }
     })
 }
@@ -78,6 +88,36 @@ export const useRequestCancelJoinProject = () => {
         onSuccess: async () => {
             toast.success("Request cancelled")
             await utils.projects.getPublic.invalidate()
+        },
+        onError: (err) => {
+            toast.error(err.message)
+        }
+    })
+}
+
+export const useApproveJoinRequest = () => {
+    const utils = trpc.useUtils()
+
+    return trpc.projects.approveJoin.useMutation({
+        onSuccess: async () => {
+            toast.success("Request approved")
+            await utils.projects.getMine.invalidate()
+            await utils.projects.getPublic.invalidate()
+            await utils.projects.getJoinRequests.invalidate()
+        },
+        onError: (err) => {
+            toast.error(err.message)
+        }
+    })
+}
+
+export const useRejectJoinRequest = () => {
+    const utils = trpc.useUtils()
+
+    return trpc.projects.rejectJoin.useMutation({
+        onSuccess: async () => {
+            toast.success('Request rejected')
+            await utils.projects.getJoinRequests.invalidate()
         },
         onError: (err) => {
             toast.error(err.message)
