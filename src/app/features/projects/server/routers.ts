@@ -228,5 +228,81 @@ export const ProjectRouter = createTRPCRouter({
                 }
             })
         }),
+    approveJoin: protectedProcedure
+        .input(z.object({ requestId: z.string() }))
+        .mutation(async ({ ctx, input }) => {
+
+            // user ขอ project ไหน ตรวจจาก projectJoinRequest.id
+            const request = await prisma.projectJoinRequest.findFirst({
+                where: { id: input.requestId },
+                include: { project: true }
+            })
+
+            if (!request) {
+                throw new TRPCError({ code: "NOT_FOUND" })
+            }
+
+            const isOwner = await prisma.projectMember.findFirst({
+                where: {
+                    projectId: request.projectId,
+                    userId: ctx.user.id,
+                    role: "OWNER"
+                }
+            })
+
+            if (!isOwner) {
+                throw new TRPCError({ code: 'FORBIDDEN' })
+            }
+
+            if (request.status !== 'PENDING') {
+                throw new TRPCError({ code: "BAD_REQUEST" })
+            }
+
+            await prisma.$transaction([
+                prisma.projectJoinRequest.update({
+                    where: { id: input.requestId },
+                    data: { status: "APPROVED" }
+                }),
+                prisma.projectMember.create({
+                    data: {
+                        projectId: request.projectId,
+                        userId: request.userId,
+                        role: 'MEMBER'
+                    }
+                })
+            ])
+
+            return { success: true }
+
+        }),
+    rejectJoin: protectedProcedure
+        .input(z.object({ requestId: z.string() }))
+        .mutation(async ({ ctx, input }) => {
+            const request = await prisma.projectJoinRequest.findFirst({
+                where: { id: input.requestId }
+            })
+
+            if (!request) {
+                throw new TRPCError({ code: "NOT_FOUND" })
+            }
+
+            const isOwner = await prisma.projectMember.findFirst({
+                where: {
+                    projectId: request.projectId,
+                    userId: ctx.user.id,
+                    role: 'OWNER'
+                }
+            })
+
+            if (!isOwner) {
+                throw new TRPCError({ code: 'FORBIDDEN' })
+            }
+
+            await prisma.projectJoinRequest.update({
+                where: { id: input.requestId, },
+                data: { status: 'REJECTED' }
+            })
+
+        })
 
 })
