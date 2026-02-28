@@ -227,7 +227,7 @@ const tasks = [
 ]
 
 const PRIORITY_COLOR: Record<string, string> = {
-    HiGH: "bg-red-500",
+    HIGH: "bg-red-500",
     MEDIUM: "bg-blue-500",
     LOW: "bg-gray-300",
 }

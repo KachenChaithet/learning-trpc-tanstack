@@ -252,7 +252,11 @@ const ListProjectCard = ({ Icon, projectName, owner, projectId, status }: ListPr
 export const DialogProjectJoin = ({ open, onOpenChange }: PropsJoin) => {
     const [searchTerm, setSearchTerm] = useState('')
     const [projectsPublic] = useSuspenseProjectsPublic()
-
+    const filteredPublicProjects = projectsPublic.filter((p) =>
+        p.name.toLowerCase().includes(searchTerm.toLocaleLowerCase()) ||
+        (p.owner ?? "").toLowerCase().includes(searchTerm.toLocaleLowerCase()) ||
+        p.id.toLowerCase().includes(searchTerm.toLocaleLowerCase())
+    )
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
@@ -272,7 +276,7 @@ export const DialogProjectJoin = ({ open, onOpenChange }: PropsJoin) => {
                 </div>
                 <DialogFooter className="">
                     <div className="mt-4 flex flex-col gap-3 w-full max-h-100 overflow-auto">
-                        {projectsPublic.map((project) => (
+                        {filteredPublicProjects.map((project) => (
                             <ListProjectCard
                                 key={project.id}
                                 projectId={project.id}
@@ -346,6 +350,13 @@ export const DialogProjectRequest = ({ open, onOpenChange }: PropsRequest) => {
     const [searchTerm, setSearchTerm] = useState('')
     const [joinRequests] = useSuspenseProjectJoinRequests()
 
+    const filteredJoinRequests = joinRequests.filter((j) =>
+        j.userName?.toLocaleLowerCase().includes(searchTerm.toLocaleLowerCase()) ||
+        j.projectName.toLocaleLowerCase().includes(searchTerm.toLocaleLowerCase())
+
+
+    )
+
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent className="sm:max-w-lg">
@@ -374,7 +385,7 @@ export const DialogProjectRequest = ({ open, onOpenChange }: PropsRequest) => {
                     </div>
 
                     <div className="space-y-3 max-h-87.5 overflow-y-auto pr-1">
-                        {joinRequests.map((request) => (
+                        {filteredJoinRequests.map((request) => (
                             <ProjectCardRequest
                                 key={request.id}
                                 ImageProfile={'https://png.pngtree.com/png-vector/20231019/ourmid/pngtree-user-profile-avatar-png-image_10211467.png'}

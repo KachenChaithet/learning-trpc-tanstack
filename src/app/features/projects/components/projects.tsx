@@ -196,13 +196,17 @@ export const ProjectRequest = ({ trigger }: ProjectJoinProps) => {
     )
 }
 
-export const ProjectSearch = () => {
-    const [searchTerm, setSearchTerm] = useState('')
+type ProjectSearchProps = {
+    search: string
+    setSearch: React.Dispatch<React.SetStateAction<string>>
+}
+
+export const ProjectSearch = ({ search, setSearch }: ProjectSearchProps) => {
 
     return (
         <EntitySearch
-            value={searchTerm}
-            onChange={setSearchTerm}
+            value={search}
+            onChange={setSearch}
             placeholder="Search projects"
         />
     )
@@ -365,12 +369,19 @@ export const ProjectCardAdd = () => {
     )
 }
 
-export const ProjectList = () => {
+export const ProjectList = ({ search }: { search: string }) => {
     const [projects] = useSuspenseProjectsMine()
+
+    const filteredProjects = projects.filter((project) =>
+        project.name.toLocaleLowerCase().includes(search.toLocaleLowerCase()) ||
+        (project.description ?? "")
+            .toLowerCase()
+            .includes(search.toLocaleLowerCase())
+    )
 
     return (
         <>
-            {projects.map((project) => (
+            {filteredProjects.map((project) => (
                 <ProjectCard
                     key={project.id}
                     id={project.id}
@@ -384,13 +395,18 @@ export const ProjectList = () => {
         </>
     )
 }
+type ProjectContainerProps = {
+    search: string
+    setSearch: React.Dispatch<React.SetStateAction<string>>
+    children: React.ReactNode
+}
 
+export const ProjectContainer = ({ children, search, setSearch }: ProjectContainerProps) => {
 
-export const ProjectContainer = ({ children }: { children: React.ReactNode }) => {
     return (
         <EntityContainer
             header={<ProjectHeader />}
-            search={<ProjectSearch />}
+            search={<ProjectSearch search={search} setSearch={setSearch} />}
             statusSelect={<ProjectStatusSelect />}
             ownerSelect={<ProjectOwnderSelect />}
         >
