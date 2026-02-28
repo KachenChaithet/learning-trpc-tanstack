@@ -15,6 +15,7 @@ import { ChevronDownIcon, PlusIcon } from "lucide-react"
 import { useEffect } from "react"
 import { useForm } from "react-hook-form"
 import z from "zod"
+import { useMyProjects, useProjectMembers } from "../hooks/use-tasks"
 
 const formSchema = z.object({
     title: z.string()
@@ -60,6 +61,19 @@ const DialogTask = ({ open, onOpenChange, onSubmit, title, description, mode }: 
             status: "TODO",
         }
     })
+    const selectedProjectId = form.watch('projectId')
+
+    const { data: members, error, isLoading: membersLoading } = useProjectMembers(selectedProjectId)
+    const { data: projects, isLoading: projectsLoading } = useMyProjects()
+
+    console.log(members);
+    
+
+    const assigneeOptions =
+        members?.map((m) => ({
+            value: m.userId,
+            label: m.userName ?? m.userEmail,
+        })) ?? []
 
     const handleSubmit = (values: z.infer<typeof formSchema>) => {
         onSubmit(values)
@@ -80,6 +94,12 @@ const DialogTask = ({ open, onOpenChange, onSubmit, title, description, mode }: 
             })
         }
     }, [open, title, description, form])
+
+    useEffect(() => {
+        if (!selectedProjectId) return
+        form.setValue("assigneeId", "")
+    }, [selectedProjectId, form])
+
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent>
@@ -127,13 +147,10 @@ const DialogTask = ({ open, onOpenChange, onSubmit, title, description, mode }: 
                                 <FormItem>
                                     <FormLabel>Select Assignee</FormLabel>
                                     <EntitySelect
-
+                                        disabled={!selectedProjectId || membersLoading}
                                         onChange={field.onChange}
                                         value={field.value}
-                                        options={[
-                                            { label: "guy", value: "s" },
-                                            { label: "kar", value: "IX2NS4DFAIXslVWOMgSUeZqzkM8DDQnW" }
-                                        ]}
+                                        options={assigneeOptions}
                                         placeholder="Choose user"
                                     />
                                     <FormMessage />
@@ -143,12 +160,12 @@ const DialogTask = ({ open, onOpenChange, onSubmit, title, description, mode }: 
                                 <FormItem>
                                     <FormLabel>Select Project</FormLabel>
                                     <EntitySelect
+                                        disabled={projectsLoading}
                                         onChange={field.onChange}
                                         value={field.value}
-                                        options={[
-                                            { label: "gotostart", value: "s" },
-                                            { label: "computer", value: "cmm0htfb8000er8vdu8tlyavi" }
-                                        ]}
+                                        options={projects?.map((p) => ({
+                                            value: p.id, label: p.name
+                                        })) ?? []}
                                         placeholder="Choose project"
                                     />
                                     <FormMessage />

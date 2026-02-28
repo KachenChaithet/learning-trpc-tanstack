@@ -17,3 +17,17 @@ export const useCreateTask = () => {
 export const useSuspenseTasks = () => {
     return trpc.tasks.getMany.useSuspenseQuery()
 }
+
+export const useProjectMembers = (projectId?: string) => {
+    return trpc.tasks.getMembers.useQuery(
+        { projectId: projectId as string },
+        {
+            enabled: !!projectId,
+
+        },
+    )
+}
+
+export const useMyProjects = () => {
+    return trpc.tasks.getMineProjects.useQuery()
+}

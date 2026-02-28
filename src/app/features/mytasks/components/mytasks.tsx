@@ -229,7 +229,7 @@ const tasks = [
 const PRIORITY_COLOR: Record<string, string> = {
     HiGH: "bg-red-500",
     MEDIUM: "bg-blue-500",
-    Low: "bg-gray-300",
+    LOW: "bg-gray-300",
 }
 
 export const MyTasksTable = () => {

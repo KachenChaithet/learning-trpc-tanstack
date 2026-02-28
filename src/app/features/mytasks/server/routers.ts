@@ -50,6 +50,60 @@ export const TaskRouter = createTRPCRouter({
             }
         })
     }),
+    getMineProjects: protectedProcedure
+        .query(({ ctx }) => {
+            return prisma.project.findMany({
+                where: {
+                    projectMembers: {
+                        some: {
+                            userId: ctx.user.id,
+                            role: 'OWNER'
+                        }
+                    }
+                },
+                select: {
+                    id: true,
+                    name: true
+                }
+            })
+        }),
+    getMembers: protectedProcedure
+        .input(z.object({ projectId: z.string() }))
+        .query(async ({ ctx, input }) => {
+            const isMember = await prisma.projectMember.findFirst({
+                where: {
+                    projectId: input.projectId,
+                    userId: ctx.user.id
+                }
+            })
+            if (!isMember) {
+                throw new TRPCError({ code: "FORBIDDEN" })
+            }
+
+            const members = await prisma.projectMember.findMany({
+                where: {
+                    projectId: input.projectId,
+                    userId: {
+                        not: ctx.user.id
+                    }
+                },
+                include: {
+                    user: {
+                        select: {
+                            id: true,
+                            name: true,
+                            email: true
+                        }
+                    }
+                }
+            })
+
+            return members.map((p) => ({
+                userId: p.user.id,
+                userName: p.user.name,
+                userEmail: p.user.email
+            }))
+        })
     // remove: protectedProcedure
     //     .input(z.object({ id: z.string() }))
     //     .mutation(({ ctx, input }) => {
