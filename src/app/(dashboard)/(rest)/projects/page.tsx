@@ -1,14 +1,14 @@
 "use client"
 import { ProjectCard, ProjectCardAdd, ProjectContainer, ProjectList, projects } from "@/app/features/projects/components/projects"
-import { Suspense } from "react"
+import { Suspense, useState } from "react"
 
 const ProjectPage = () => {
+    const [searchTerm, setSearchTerm] = useState('')
 
     return (
-        <ProjectContainer>
+        <ProjectContainer search={searchTerm} setSearch={setSearchTerm}>
             <Suspense fallback={<p>Loading...</p>}>
-
-                <ProjectList />
+                <ProjectList search={searchTerm} />
             </Suspense>
         </ProjectContainer >
     )

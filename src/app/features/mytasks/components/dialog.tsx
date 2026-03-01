@@ -66,7 +66,8 @@ const DialogTask = ({ open, onOpenChange, onSubmit, title, description, mode }: 
     const { data: members, error, isLoading: membersLoading } = useProjectMembers(selectedProjectId)
     const { data: projects, isLoading: projectsLoading } = useMyProjects()
 
-    
+    console.log(members);
+
 
     const assigneeOptions =
         members?.map((m) => ({
@@ -143,15 +144,17 @@ const DialogTask = ({ open, onOpenChange, onSubmit, title, description, mode }: 
 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <FormField control={form.control} name="assigneeId" render={({ field }) => (
-                                <FormItem>
+                                <FormItem >
                                     <FormLabel>Select Assignee</FormLabel>
                                     <EntitySelect
-                                        disabled={!selectedProjectId || membersLoading}
+                                        disabled={!selectedProjectId || membersLoading || members?.length === 0}
                                         onChange={field.onChange}
                                         value={field.value}
                                         options={assigneeOptions}
-                                        placeholder="Choose user"
+                                        placeholder={members?.length === 0 ? 'no members' : 'Choose user'}
                                     />
+
+
                                     <FormMessage />
                                 </FormItem>
                             )} />

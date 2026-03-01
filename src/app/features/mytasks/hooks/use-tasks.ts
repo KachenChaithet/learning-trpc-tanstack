@@ -9,6 +9,10 @@ export const useCreateTask = () => {
             toast.success(`Task "${data.title}"`)
         },
         onError: (err) => {
+            if (err.data?.code === 'FORBIDDEN') {
+                toast.error("You don't have permission")
+                return
+            }
             toast.error(err.message)
         }
     })

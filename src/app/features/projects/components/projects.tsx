@@ -3,11 +3,13 @@ import { EntityContainer, EntitySearch, EntitySelect } from "@/app/components/en
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card"
 import { Progress } from "@/components/ui/progress"
-import { Banknote, CalendarIcon, EllipsisVerticalIcon, PlusIcon, ReceiptRussianRuble } from "lucide-react"
-import { useState } from "react"
-import DialogProjects, { Formtype } from "./dialog"
-import { useCreateProject, useRemoveProject, useSuspenseProjects, useUpdateProject } from "../hooks/use-projects"
+import { Banknote, CalendarIcon, Clock, EllipsisVerticalIcon, FileClock, PlusIcon, ReceiptRussianRuble, UserPlusIcon } from "lucide-react"
+import { Suspense, useState } from "react"
+import DialogProjects, { DialogProjectJoin, DialogProjectRequest, Formtype } from "./dialog"
+import { useCreateProject, useRemoveProject, useSuspenseProjectsMine, useUpdateProject } from "../hooks/use-projects"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
+import { Skeleton } from "@/components/ui/skeleton"
+import { Spinner } from "@/components/ui/spinner"
 
 
 
@@ -57,12 +59,30 @@ export const ProjectHeader = () => {
                                     <span>Add Project</span>
                                 </Button>
                             }
+
                         />
                     </span>
-                    <Button>
-                        <PlusIcon className="size-4" />
-                        <span>Join</span>
-                    </Button>
+                    <span>
+                        <ProjectJoin
+                            trigger={
+                                <Button>
+                                    <UserPlusIcon className="size-4" />
+                                    <span>Join</span>
+                                </Button>
+                            }
+                        />
+                    </span>
+                    <span>
+                        <ProjectRequest
+                            trigger={
+                                <Button>
+                                    <FileClock className="size-4" />
+                                    <span>Request</span>
+                                </Button>
+                            }
+                        />
+                    </span>
+
                 </div>
             </div>
 
@@ -76,10 +96,11 @@ interface CreateProjectProps {
     description?: string
     mode: "create" | "update"
     projectId?: string
+    visibility?: 'PRIVATE' | 'PUBLIC'
 }
 
 
-export const CreateProjectDialog = ({ trigger, title, description, mode, projectId }: CreateProjectProps) => {
+export const CreateProjectDialog = ({ trigger, title, description, mode, projectId, visibility }: CreateProjectProps) => {
 
     const [dialogOpen, setDialogOpen] = useState(false)
     const { mutate: createProject, isPending: isCreating } = useCreateProject()
@@ -88,7 +109,8 @@ export const CreateProjectDialog = ({ trigger, title, description, mode, project
         if (mode === 'create') {
             createProject({
                 name: values.name,
-                description: values.description
+                description: values.description,
+                visibility: values.visibility
             }, {
                 onSuccess: () => {
                     setDialogOpen(false)
@@ -99,7 +121,8 @@ export const CreateProjectDialog = ({ trigger, title, description, mode, project
             updateProject({
                 id: projectId,
                 name: values.name,
-                description: values.description
+                description: values.description,
+                visibility: values.visibility
             })
         }
 
@@ -119,18 +142,71 @@ export const CreateProjectDialog = ({ trigger, title, description, mode, project
                 open={dialogOpen}
                 onOpenChange={setDialogOpen}
                 onSubmit={handleSubmit}
+                visibility={visibility}
             />
         </>
     )
 }
 
-export const ProjectSearch = () => {
-    const [searchTerm, setSearchTerm] = useState('')
+interface ProjectJoinProps {
+    trigger?: React.ReactNode
+}
+
+export const ProjectJoin = ({ trigger }: ProjectJoinProps) => {
+    const [dialogOpen, setDialogOpen] = useState(false)
+
+
+    return (
+        <>
+            <div className="contents" onClick={() => setDialogOpen(true)} >
+                {trigger}
+            </div>
+
+            <Suspense fallback={<Spinner />}>
+                {dialogOpen && (
+                    <DialogProjectJoin
+                        open={dialogOpen}
+                        onOpenChange={setDialogOpen}
+                    />
+                )}
+            </Suspense>
+        </>
+    )
+}
+
+export const ProjectRequest = ({ trigger }: ProjectJoinProps) => {
+    const [dialogOpen, setDialogOpen] = useState(false)
+
+
+    return (
+        <>
+            <div className="contents" onClick={() => setDialogOpen(true)} >
+                {trigger}
+            </div>
+
+            <Suspense fallback={<Spinner />}>
+                {dialogOpen && (
+                    <DialogProjectRequest
+                        open={dialogOpen}
+                        onOpenChange={setDialogOpen}
+                    />
+                )}
+            </Suspense>
+        </>
+    )
+}
+
+type ProjectSearchProps = {
+    search: string
+    setSearch: React.Dispatch<React.SetStateAction<string>>
+}
+
+export const ProjectSearch = ({ search, setSearch }: ProjectSearchProps) => {
 
     return (
         <EntitySearch
-            value={searchTerm}
-            onChange={setSearchTerm}
+            value={search}
+            onChange={setSearch}
             placeholder="Search projects"
         />
     )
@@ -170,6 +246,7 @@ type ProjectCardProps = {
     extraMembers?: number
     dueDate?: string
     id: string
+    visibility: 'PRIVATE' | 'PUBLIC'
 }
 
 export const projects: ProjectCardProps[] = [
@@ -180,7 +257,8 @@ export const projects: ProjectCardProps[] = [
         "progress": 65,
         "avatars": 3,
         "extraMembers": 2,
-        "dueDate": "2023-12-15"
+        "dueDate": "2023-12-15",
+        "visibility": 'PRIVATE'
     },
     {
         "id": "2",
@@ -189,7 +267,8 @@ export const projects: ProjectCardProps[] = [
         "progress": 40,
         "avatars": 4,
         "extraMembers": 1,
-        "dueDate": "2023-11-30"
+        "dueDate": "2023-11-30",
+        "visibility": 'PRIVATE'
     },
     {
         "id": "3",
@@ -198,11 +277,12 @@ export const projects: ProjectCardProps[] = [
         "progress": 80,
         "avatars": 5,
         "extraMembers": 0,
-        "dueDate": "2023-12-20"
+        "dueDate": "2023-12-20",
+        "visibility": 'PRIVATE'
     }
 ]
 
-export const ProjectCard = ({ title, description, avatars, progress, extraMembers, dueDate, id }: ProjectCardProps) => {
+export const ProjectCard = ({ title, description, avatars, progress, extraMembers, dueDate, id, visibility }: ProjectCardProps) => {
     const removeProject = useRemoveProject()
 
     const handleRemove = () => {
@@ -237,6 +317,8 @@ export const ProjectCard = ({ title, description, avatars, progress, extraMember
                             title={title}
                             description={description}
                             projectId={id}
+                            visibility={visibility}
+
                         />
 
                         <DropdownMenuItem
@@ -287,17 +369,25 @@ export const ProjectCardAdd = () => {
     )
 }
 
-export const ProjectList = () => {
-    const [projects] = useSuspenseProjects()
+export const ProjectList = ({ search }: { search: string }) => {
+    const [projects] = useSuspenseProjectsMine()
+
+    const filteredProjects = projects.filter((project) =>
+        project.name.toLocaleLowerCase().includes(search.toLocaleLowerCase()) ||
+        (project.description ?? "")
+            .toLowerCase()
+            .includes(search.toLocaleLowerCase())
+    )
 
     return (
         <>
-            {projects.map((project) => (
+            {filteredProjects.map((project) => (
                 <ProjectCard
                     key={project.id}
                     id={project.id}
                     title={project.name}
                     description={project.description ?? undefined}
+                    visibility={project.visibility}
                 />
 
             ))}
@@ -305,13 +395,18 @@ export const ProjectList = () => {
         </>
     )
 }
+type ProjectContainerProps = {
+    search: string
+    setSearch: React.Dispatch<React.SetStateAction<string>>
+    children: React.ReactNode
+}
 
+export const ProjectContainer = ({ children, search, setSearch }: ProjectContainerProps) => {
 
-export const ProjectContainer = ({ children }: { children: React.ReactNode }) => {
     return (
         <EntityContainer
             header={<ProjectHeader />}
-            search={<ProjectSearch />}
+            search={<ProjectSearch search={search} setSearch={setSearch} />}
             statusSelect={<ProjectStatusSelect />}
             ownerSelect={<ProjectOwnderSelect />}
         >

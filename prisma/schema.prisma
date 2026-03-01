@@ -23,10 +23,11 @@ model User {
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
-  sessions       Session[]
-  accounts       Account[]
-  projectMembers ProjectMember[]
-  tasks          Task[]          @relation("UserTasks")
+  sessions            Session[]
+  accounts            Account[]
+  projectMembers      ProjectMember[]
+  tasks               Task[]               @relation("UserTasks")
+  projectJoinRequests ProjectJoinRequest[]
 
   @@map("user")
 }
@@ -62,8 +63,9 @@ model Project {
 
   visibility ProjectVisibility @default(PRIVATE)
 
-  projectMembers ProjectMember[]
-  tasks          Task[]
+  projectMembers      ProjectMember[]
+  tasks               Task[]
+  projectJoinRequests ProjectJoinRequest[]
 }
 
 enum TaskStatus {
@@ -99,6 +101,31 @@ model Task {
 
   @@index([projectId])
   @@index([assigneeId])
+}
+
+enum JoinRequestStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+model ProjectJoinRequest {
+  id String @id @default(cuid())
+
+  projectId String
+  userId    String
+
+  status JoinRequestStatus @default(PENDING)
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  user    User    @relation(fields: [userId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([projectId, userId])
+  @@index([projectId])
+  @@index([userId])
 }
 
 model Session {
