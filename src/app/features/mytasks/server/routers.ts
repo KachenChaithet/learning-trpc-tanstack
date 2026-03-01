@@ -61,13 +61,13 @@ export const TaskRouter = createTRPCRouter({
         .query(({ ctx, input }) => {
             const now = new Date()
 
-            const startOfToday = new Date()
+            const startOfToday = new Date(now)
             startOfToday.setHours(0, 0, 0, 0)
 
-            const endOfToday = new Date()
+            const endOfToday = new Date(now)
             endOfToday.setHours(23, 59, 59, 999)
 
-            const endOfWeek = new Date()
+            const endOfWeek = new Date(now)
             endOfWeek.setDate(now.getDate() + 7)
 
             return prisma.task.findMany({

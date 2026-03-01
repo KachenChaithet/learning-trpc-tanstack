@@ -66,6 +66,9 @@ model Project {
   projectMembers      ProjectMember[]
   tasks               Task[]
   projectJoinRequests ProjectJoinRequest[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 enum TaskStatus {

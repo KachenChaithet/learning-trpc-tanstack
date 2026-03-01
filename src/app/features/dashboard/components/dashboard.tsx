@@ -1,3 +1,5 @@
+"use client"
+
 import { EntityContainer } from "@/app/components/entity-components"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
@@ -12,6 +14,7 @@ import {
     FolderIcon,
     PlusIcon,
 } from "lucide-react"
+import { useOverview } from "../hooks/use-dashboards"
 
 /* ================================
    Dashboard Stats
@@ -323,6 +326,9 @@ function ActivityItem({
 ================================ */
 
 export const DashboardHeader = () => {
+    const { data } = useOverview()
+    console.log(data);
+
     return (
         <div className="w-full">
             <div>

@@ -2,6 +2,7 @@ import { z } from 'zod';
 import { baseProcedure, createTRPCRouter, protectedProcedure } from '../init';
 import { ProjectRouter } from '@/app/features/projects/server/routers';
 import { TaskRouter } from '@/app/features/mytasks/server/routers';
+import { DashboardRouter } from '@/app/features/dashboard/server/routers';
 export const appRouter = createTRPCRouter({
     hello: protectedProcedure
         .query(({ ctx, input }) => {
@@ -10,7 +11,8 @@ export const appRouter = createTRPCRouter({
             };
         }),
     projects: ProjectRouter,
-    tasks: TaskRouter
+    tasks: TaskRouter,
+    dashboard: DashboardRouter
 
 });
 // export type definition of API
