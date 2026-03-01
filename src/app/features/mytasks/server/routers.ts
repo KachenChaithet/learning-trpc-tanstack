@@ -49,20 +49,83 @@ export const TaskRouter = createTRPCRouter({
                 }
             })
         }),
-    getMany: protectedProcedure.query(({ ctx }) => {
-        return prisma.task.findMany({
-            where: {
-                assigneeId: ctx.user.id
-            },
-            include: {
-                project: {
-                    select: {
-                        name: true
+    getMany: protectedProcedure
+        .input(
+            z.object({
+                projectId: z.string().optional(),
+                priority: z.enum(["ALL", "LOW", "MEDIUM", "HIGH"]).optional(),
+                date: z.enum(["newest", "oldest"]).optional(),
+                tab: z.enum(["today", "week", "overdue", "completed"]).optional()
+            })
+        )
+        .query(({ ctx, input }) => {
+            const now = new Date()
+
+            const startOfToday = new Date()
+            startOfToday.setHours(0, 0, 0, 0)
+
+            const endOfToday = new Date()
+            endOfToday.setHours(23, 59, 59, 999)
+
+            const endOfWeek = new Date()
+            endOfWeek.setDate(now.getDate() + 7)
+
+            return prisma.task.findMany({
+                where: {
+                    assigneeId: ctx.user.id,
+
+                    ...(input?.projectId &&
+                        input.projectId !== "ALL" && {
+                        projectId: input.projectId,
+                    }),
+
+                    ...(input?.priority &&
+                        input.priority !== "ALL" && {
+                        priority: input.priority,
+                    }),
+
+                    //  Tab Filter
+                    ...(input?.tab === "today" && {
+                        dueDate: {
+                            gte: now
+                        },
+                    }),
+
+                    ...(input?.tab === "week" && {
+                        dueDate: {
+                            gte: now,
+                            lte: endOfWeek,
+                        },
+                    }),
+
+                    ...(input?.tab === 'overdue' && {
+                        dueDate: {
+                            lt: now
+                        }
+                    }),
+
+                    ...(input?.tab === 'completed' && {
+                        status: 'DONE'
+                    })
+
+                },
+
+                orderBy: input?.date
+                    ? {
+                        dueDate: input.date === "newest" ? "desc" : "asc",
                     }
-                }
-            }
-        })
-    }),
+                    : undefined,
+
+                include: {
+                    project: {
+                        select: {
+                            id: true,
+                            name: true,
+                        },
+                    },
+                },
+            })
+        }),
     getMineProjects: protectedProcedure
         .query(({ ctx }) => {
             return prisma.project.findMany({
@@ -116,6 +179,18 @@ export const TaskRouter = createTRPCRouter({
                 userName: p.user.name,
                 userEmail: p.user.email
             }))
+        }),
+    getMyAccessible: protectedProcedure
+        .query(({ ctx }) => {
+            return prisma.project.findMany({
+                where: {
+                    projectMembers: {
+                        some: {
+                            userId: ctx.user.id
+                        }
+                    }
+                }
+            })
         })
     // remove: protectedProcedure
     //     .input(z.object({ id: z.string() }))

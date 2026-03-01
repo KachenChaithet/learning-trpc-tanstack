@@ -10,7 +10,7 @@ import { PlusIcon } from "lucide-react"
 import { useState } from "react"
 import { Pagination, PaginationContent, PaginationEllipsis, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from "@/components/ui/pagination"
 import DialogTask, { Formtype } from "./dialog"
-import { useCreateTask, useSuspenseTasks } from "../hooks/use-tasks"
+import { useAccessibleProjects, useCreateTask, useMyProjects, useSuspenseTasks } from "../hooks/use-tasks"
 
 
 export const MytasksHeader = () => {
@@ -98,12 +98,16 @@ export const CreateTaskDialog = ({ trigger, title, description, mode, TaskId }: 
 }
 
 
+type TaskTab = "today" | "week" | "overdue" | "completed"
 
-export function TaskTabs() {
-    const [activeTab, setActiveTab] = useState("today")
+type TaskTabsProps = {
+    value: TaskTab
+    onChange: (v: TaskTab) => void
+}
+export function TaskTabs({ value, onChange }: TaskTabsProps) {
 
     return (
-        <Tabs value={activeTab} onValueChange={setActiveTab}>
+        <Tabs value={value} onValueChange={(v) => onChange(v as TaskTab)}>
             <TabsList
                 className="bg-transparent p-0 h-auto gap-6"
                 variant="line"
@@ -131,100 +135,82 @@ export function TaskTabs() {
     )
 }
 
-const prioritys = [
-    { "label": "All", "value": "all" },
-    { "label": "Low", "value": "low" },
-    { "label": "Medium", "value": "medium" },
-    { "label": "High", "value": "high" }
-]
-const dates = [
-    { "label": "Ascending", "value": "asc" },
-    { "label": "Descending", "value": "desc" },
-    { "label": "Newest First", "value": "newest" },
-    { "label": "Oldest First", "value": "oldest" }
+
+type Priority = "LOW" | "MEDIUM" | "HIGH"
+type SortOrder = "newest" | "oldest"
+
+type MytasksSelectedProps = {
+    priority?: Priority
+    setPriority: React.Dispatch<React.SetStateAction<Priority | undefined>>
+
+    date?: SortOrder
+    setDate: React.Dispatch<React.SetStateAction<SortOrder | undefined>>
+
+    projectId?: string
+    setProjectId: React.Dispatch<React.SetStateAction<string | undefined>>
+}
+
+const PRIORITY_OPTIONS = [
+    { label: "All", value: "ALL" },
+    { label: "Low", value: "LOW" },
+    { label: "Medium", value: "MEDIUM" },
+    { label: "High", value: "HIGH" },
 ]
 
-const projects = [
-    { "label": "All", "value": "all" },
-    { "label": "Website Redesign", "value": "website-redesign" },
-    { "label": "Mobile App Development", "value": "mobile-app" },
-    { "label": "Q4 Marketing Launch", "value": "q4-marketing" }
-]
+export const MytasksSelected = ({
+    date,
+    priority,
+    projectId,
+    setDate,
+    setPriority,
+    setProjectId,
+}: MytasksSelectedProps) => {
 
-export const MytasksSelected = () => {
-    const [priority, setPriority] = useState('')
-    const [date, setDate] = useState('')
-    const [project, setProject] = useState('')
+    const { data: myprojects } = useAccessibleProjects()
+
+    const projects =
+        myprojects?.map((p) => ({
+            label: p.name,
+            value: p.id,
+        })) ?? []
 
     return (
-        <div className="flex border-muted-foreground p-4 bg-white rounded-md shadow-md gap-4">
-            <EntitySelect
-                options={prioritys}
-                onChange={setPriority}
-                value={priority}
-                placeholder="Priority: All"
+        <div className="flex p-4 bg-white rounded-md shadow-md gap-4">
 
-            />
             <EntitySelect
-                options={dates}
-                onChange={setDate}
-                value={date}
-                placeholder="Due Date: Ascending"
-
+                options={PRIORITY_OPTIONS}
+                value={priority ?? "ALL"}
+                onChange={(v) =>
+                    setPriority(v === "ALL" ? undefined : (v as Priority))
+                }
             />
+
             <EntitySelect
-                options={projects}
-                onChange={setProject}
-                value={project}
-                placeholder="Project: All"
-
+                options={[
+                    { label: "All", value: "ALL" },
+                    { label: "Newest First", value: "newest" },
+                    { label: "Oldest First", value: "oldest" },
+                ]}
+                value={date ?? "ALL"}
+                onChange={(v) =>
+                    setDate(v === "ALL" ? undefined : (v as SortOrder))
+                }
             />
+
+            <EntitySelect
+                options={[
+                    { label: "All", value: "ALL" },
+                    ...projects,
+                ]}
+                value={projectId ?? "ALL"}
+                onChange={(v) =>
+                    setProjectId(v === "ALL" ? undefined : v)
+                }
+            />
+
         </div>
     )
 }
-
-const tasks = [
-    {
-        "id": "1",
-        "taskName": "Review Q3 Marketing Strategy Assets",
-        "description": "Last updated 2h ago",
-        "project": "MARKETING",
-        "priority": "high",
-        "dueDate": "2023-10-25T17:00:00",
-        "dueLabel": "Today, 5:00 PM",
-        "status": "in-progress"
-    },
-    {
-        "id": "2",
-        "taskName": "API Documentation for v2.4 Release",
-        "description": "Shared with Engineering",
-        "project": "CORE API",
-        "priority": "medium",
-        "dueDate": "2023-10-24T00:00:00",
-        "dueLabel": "Oct 24, 2023",
-        "status": "todo"
-    },
-    {
-        "id": "3",
-        "taskName": "Client Presentation: Brand Refresh",
-        "description": "Internal draft required",
-        "project": "CLIENT X",
-        "priority": "high",
-        "dueDate": "2023-10-26T10:00:00",
-        "dueLabel": "Tomorrow, 10:00 AM",
-        "status": "in-progress"
-    },
-    {
-        "id": "4",
-        "taskName": "Weekly Sync with Product Team",
-        "description": "Recurring event",
-        "project": "INTERNAL",
-        "priority": "low",
-        "dueDate": "2023-10-26T00:00:00",
-        "dueLabel": "Oct 26, 2023",
-        "status": "todo"
-    }
-]
 
 const PRIORITY_COLOR: Record<string, string> = {
     HIGH: "bg-red-500",
@@ -232,16 +218,30 @@ const PRIORITY_COLOR: Record<string, string> = {
     LOW: "bg-gray-300",
 }
 
-export const MyTasksTable = () => {
-    const [tasks] = useSuspenseTasks()
+type TableProps = {
+    priority?: Priority
+    date?: SortOrder
+    projectId?: string
+    tab?: TaskTab
+}
+
+export const MyTasksTable = ({
+    date,
+    priority,
+    projectId,
+    tab,
+}: TableProps) => {
+
+    const [tasks] = useSuspenseTasks({ priority, projectId, date, tab })
+
+
 
     return (
         <Card>
-
             <Table>
                 <TableHeader>
                     <TableRow>
-                        <TableHead>Check Box</TableHead>
+                        <TableHead></TableHead>
                         <TableHead>Task Name</TableHead>
                         <TableHead>Project</TableHead>
                         <TableHead>Priority</TableHead>
@@ -249,6 +249,7 @@ export const MyTasksTable = () => {
                         <TableHead>Status</TableHead>
                     </TableRow>
                 </TableHeader>
+
                 <TableBody>
                     {tasks.length === 0 ? (
                         <TableRow>
@@ -258,20 +259,20 @@ export const MyTasksTable = () => {
                         </TableRow>
                     ) : (
                         tasks.map((task) => (
-                            <TableRow className="h-12" key={task.id}>
+                            <TableRow key={task.id}>
                                 <TableCell><Checkbox /></TableCell>
                                 <TableCell className="font-semibold">{task.title}</TableCell>
                                 <TableCell>{task.project?.name}</TableCell>
-                                <TableCell className="space-x-2">
+                                <TableCell className={`flex items-center gap-3`}>
                                     <span
-                                        className={`inline-block w-2.5 h-2.5 rounded-full ${PRIORITY_COLOR[task.priority]}`}
-                                    ></span>
-                                    <span>{task.priority}</span>
+                                        className={`inline-block rounded-full w-2.5 h-2.5 ${PRIORITY_COLOR[task.priority]}`}
+                                    />
+                                    {task.priority}
                                 </TableCell>
                                 <TableCell>
                                     {task.dueDate
                                         ? new Date(task.dueDate).toLocaleDateString()
-                                        : "Nothing"}
+                                        : "-"}
                                 </TableCell>
                                 <TableCell>{task.status}</TableCell>
                             </TableRow>
@@ -283,36 +284,33 @@ export const MyTasksTable = () => {
     )
 }
 
-export const MytasksContainer = ({ children }: { children: React.ReactNode }) => {
+export const MytasksContainer = () => {
+
+    const [priority, setPriority] = useState<Priority | undefined>()
+    const [projectId, setProjectId] = useState<string | undefined>()
+    const [date, setDate] = useState<SortOrder | undefined>()
+    const [activeTab, setActiveTab] = useState<TaskTab>("today")
+
     return (
-        <EntityContainer
-            header={<MytasksHeader />}
-        >
-            <TaskTabs />
-            <MytasksSelected />
-            <MyTasksTable />
-            <Pagination>
-                <PaginationContent>
-                    <PaginationItem>
-                        <PaginationPrevious href="#" />
-                    </PaginationItem>
-                    <PaginationItem>
-                        <PaginationLink href="#">1</PaginationLink>
-                    </PaginationItem>
-                    <PaginationItem>
-                        <PaginationLink href="#" isActive>2</PaginationLink>
-                    </PaginationItem>
-                    <PaginationItem>
-                        <PaginationLink href="#">3</PaginationLink>
-                    </PaginationItem>
-                    <PaginationItem>
-                        <PaginationEllipsis />
-                    </PaginationItem>
-                    <PaginationItem>
-                        <PaginationNext href="#" />
-                    </PaginationItem>
-                </PaginationContent>
-            </Pagination>
+        <EntityContainer header={<MytasksHeader />}>
+            <TaskTabs onChange={setActiveTab} value={activeTab} />
+
+            <MytasksSelected
+                date={date}
+                priority={priority}
+                projectId={projectId}
+                setDate={setDate}
+                setPriority={setPriority}
+                setProjectId={setProjectId}
+            />
+
+            <MyTasksTable
+                date={date}
+                priority={priority}
+                projectId={projectId}
+                tab={activeTab}
+            />
+
         </EntityContainer>
     )
 }
