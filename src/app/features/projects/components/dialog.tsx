@@ -87,7 +87,7 @@ const DialogProjects = ({ open, onOpenChange, onSubmit, title, description, mode
                             <FormItem>
                                 <FormLabel>Project Desription</FormLabel>
                                 <FormControl>
-                                 
+
                                     <Textarea
                                         placeholder="Describe the project..."
                                         className="min-h-30"
@@ -111,4 +111,4 @@ const DialogProjects = ({ open, onOpenChange, onSubmit, title, description, mode
         </Dialog >
     )
 }
-export default DialogProjects
+export default DialogProjects   

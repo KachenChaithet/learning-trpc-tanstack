@@ -10,7 +10,7 @@ import { PlusIcon } from "lucide-react"
 import { useState } from "react"
 import { Pagination, PaginationContent, PaginationEllipsis, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from "@/components/ui/pagination"
 import DialogTask, { Formtype } from "./dialog"
-import { useCreateTask, useSuspenseTasks } from "../hooks/use-tasks"
+import { useCreateTask, useMyProjects, useSuspenseTasks } from "../hooks/use-tasks"
 
 
 export const MytasksHeader = () => {
@@ -132,10 +132,10 @@ export function TaskTabs() {
 }
 
 const prioritys = [
-    { "label": "All", "value": "all" },
-    { "label": "Low", "value": "low" },
-    { "label": "Medium", "value": "medium" },
-    { "label": "High", "value": "high" }
+    { "label": "All", "value": "ALL" },
+    { "label": "Low", "value": "LOW" },
+    { "label": "Medium", "value": "MEDIUM" },
+    { "label": "High", "value": "HIGH" }
 ]
 const dates = [
     { "label": "Ascending", "value": "asc" },
@@ -151,10 +151,21 @@ const projects = [
     { "label": "Q4 Marketing Launch", "value": "q4-marketing" }
 ]
 
-export const MytasksSelected = () => {
-    const [priority, setPriority] = useState('')
-    const [date, setDate] = useState('')
-    const [project, setProject] = useState('')
+type MytasksSelectedProps = {
+    priority: string
+    setPriority: (v: string) => void
+    date: string
+    setDate: (v: string) => void
+    project: string
+    setProject: (v: string) => void
+}
+
+export const MytasksSelected = ({ date, priority, project, setDate, setPriority, setProject }: MytasksSelectedProps) => {
+    const { data } = useMyProjects()
+    const projects = data?.map((p) => ({
+        label: p.name,
+        value: p.name
+    })) ?? []
 
     return (
         <div className="flex border-muted-foreground p-4 bg-white rounded-md shadow-md gap-4">
@@ -227,13 +238,31 @@ const tasks = [
 ]
 
 const PRIORITY_COLOR: Record<string, string> = {
-    HiGH: "bg-red-500",
+    HIGH: "bg-red-500",
     MEDIUM: "bg-blue-500",
     LOW: "bg-gray-300",
 }
 
-export const MyTasksTable = () => {
+type TableProps = {
+    priority: string
+    date: string
+    project: string
+}
+
+
+export const MyTasksTable = ({ date, priority, project }: TableProps) => {
     const [tasks] = useSuspenseTasks()
+
+    const filteredTasks = tasks.filter(task => {
+        return (
+
+            (!priority || priority === 'ALL' || task.priority === priority) &&
+            (!project || project === 'ALL' || task.project.name === project)
+        )
+    })
+
+    console.log(tasks);
+
 
     return (
         <Card>
@@ -257,7 +286,7 @@ export const MyTasksTable = () => {
                             </TableCell>
                         </TableRow>
                     ) : (
-                        tasks.map((task) => (
+                        filteredTasks.map((task) => (
                             <TableRow className="h-12" key={task.id}>
                                 <TableCell><Checkbox /></TableCell>
                                 <TableCell className="font-semibold">{task.title}</TableCell>
@@ -284,13 +313,19 @@ export const MyTasksTable = () => {
 }
 
 export const MytasksContainer = ({ children }: { children: React.ReactNode }) => {
+    const [priority, setPriority] = useState('')
+    const [date, setDate] = useState('')
+    const [project, setProject] = useState('')
+
+
+
     return (
         <EntityContainer
             header={<MytasksHeader />}
         >
             <TaskTabs />
-            <MytasksSelected />
-            <MyTasksTable />
+            <MytasksSelected date={date} priority={priority} project={project} setDate={setDate} setPriority={setPriority} setProject={setProject} />
+            <MyTasksTable date={date} priority={priority} project={project} />
             <Pagination>
                 <PaginationContent>
                     <PaginationItem>
