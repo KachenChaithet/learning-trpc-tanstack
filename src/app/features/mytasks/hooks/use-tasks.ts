@@ -18,8 +18,15 @@ export const useCreateTask = () => {
     })
 }
 
-export const useSuspenseTasks = () => {
-    return trpc.tasks.getMany.useSuspenseQuery()
+type TaskFilter = {
+    projectId?: string
+    priority?: "ALL" | "LOW" | "MEDIUM" | "HIGH"
+    date?: "newest" | "oldest"
+    tab?: "today" | "week" | "overdue" | "completed"
+}
+
+export const useSuspenseTasks = (filter?: TaskFilter) => {
+    return trpc.tasks.getMany.useSuspenseQuery(filter ?? {})
 }
 
 export const useProjectMembers = (projectId?: string) => {
@@ -35,3 +42,8 @@ export const useProjectMembers = (projectId?: string) => {
 export const useMyProjects = () => {
     return trpc.tasks.getMineProjects.useQuery()
 }
+
+export const useAccessibleProjects = () => {
+    return trpc.tasks.getMyAccessible.useQuery()
+}
+

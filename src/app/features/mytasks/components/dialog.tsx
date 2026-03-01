@@ -66,7 +66,6 @@ const DialogTask = ({ open, onOpenChange, onSubmit, title, description, mode }: 
     const { data: members, error, isLoading: membersLoading } = useProjectMembers(selectedProjectId)
     const { data: projects, isLoading: projectsLoading } = useMyProjects()
 
-    console.log(members);
 
 
     const assigneeOptions =
