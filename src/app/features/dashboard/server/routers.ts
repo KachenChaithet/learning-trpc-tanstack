@@ -58,6 +58,27 @@ export const DashboardRouter = createTRPCRouter({
                     }
                 }
             })
+            const nextTask = await prisma.task.findFirst({
+                where: {
+                    assigneeId: ctx.user.id,
+                    dueDate: {
+                        not: null,
+                        gte: now
+                    },
+                    status: { not: "DONE" }
+                },
+                orderBy: {
+                    dueDate: "asc"
+                }
+            })
+
+            const nextDueInHours =
+                nextTask?.dueDate
+                    ? Math.ceil(
+                        (nextTask.dueDate.getTime() - now.getTime()) /
+                        (1000 * 60 * 60)
+                    )
+                    : null
 
             const overdue = await prisma.task.count({
                 where: {
@@ -88,13 +109,31 @@ export const DashboardRouter = createTRPCRouter({
                 }
             })
 
+            const completedThisMonth = await prisma.task.count({
+                where: {
+                    project: {
+                        projectMembers: {
+                            some: {
+                                userId: ctx.user.id
+                            }
+                        },
+                    },
+                    status: 'DONE',
+                    updatedAt: {
+                        gte: startOfMonth
+                    }
+                }
+            })
+
 
             return {
                 totalProjects,
                 activeThisWeek,
                 tasksDueToday,
+                nextDueInHours,
                 overdue,
-                completed
+                completed,
+                completedThisMonth
             }
         })
 }) 

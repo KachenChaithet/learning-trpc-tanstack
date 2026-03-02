@@ -241,6 +241,8 @@ export const ProjectOwnderSelect = () => {
 type ProjectCardProps = {
     title: string
     description?: string
+    totalTasks?: number
+    completedTasks?: number
     progress?: number
     avatars?: number
     extraMembers?: number
@@ -282,7 +284,7 @@ export const projects: ProjectCardProps[] = [
     }
 ]
 
-export const ProjectCard = ({ title, description, avatars, progress, extraMembers, dueDate, id, visibility }: ProjectCardProps) => {
+export const ProjectCard = ({ title, description, avatars, progress, completedTasks, totalTasks, extraMembers, dueDate, id, visibility }: ProjectCardProps) => {
     const removeProject = useRemoveProject()
 
     const handleRemove = () => {
@@ -333,8 +335,13 @@ export const ProjectCard = ({ title, description, avatars, progress, extraMember
             <CardContent>
                 <h1 className="font-semibold">{title}</h1>
                 <p className="text-muted-foreground">{description}</p>
+
             </CardContent>
             <CardFooter className="flex flex-col gap-4">
+                <div className="flex items-end justify-center flex-col w-full">
+                    <p className="text-muted-foreground text-sm">tasks</p>
+                    <p className="font-semibold">{completedTasks} / {totalTasks}</p>
+                </div>
                 <div className="w-full">
                     <div className=" flex items-center justify-between ">
                         <p className="text-muted-foreground">Progress</p>
@@ -343,6 +350,7 @@ export const ProjectCard = ({ title, description, avatars, progress, extraMember
                     <Progress value={progress} />
 
                 </div>
+
                 {dueDate && (
                     <div className="text-muted-foreground flex items-center justify-end w-full gap-2">
                         <CalendarIcon className="size-4" />
@@ -371,6 +379,8 @@ export const ProjectCardAdd = () => {
 
 export const ProjectList = ({ search }: { search: string }) => {
     const [projects] = useSuspenseProjectsMine()
+    console.log(projects);
+
 
     const filteredProjects = projects.filter((project) =>
         project.name.toLocaleLowerCase().includes(search.toLocaleLowerCase()) ||
@@ -388,6 +398,9 @@ export const ProjectList = ({ search }: { search: string }) => {
                     title={project.name}
                     description={project.description ?? undefined}
                     visibility={project.visibility}
+                    progress={project.progress}
+                    completedTasks={project.completedTasks}
+                    totalTasks={project.totalTasks}
                 />
 
             ))}

@@ -15,45 +15,13 @@ import {
     PlusIcon,
 } from "lucide-react"
 import { useOverview } from "../hooks/use-dashboards"
+import { Suspense } from "react"
 
 /* ================================
    Dashboard Stats
 ================================ */
 
-export const dashboardStats = [
-    {
-        title: "Total Projects",
-        value: 18,
-        description: "4 active this week",
-        icon: FolderIcon,
-        iconBg: "bg-blue-100",
-        iconColor: "text-blue-600",
-    },
-    {
-        title: "Tasks Due Today",
-        value: 6,
-        description: "Next due in 2 hours",
-        icon: CalendarIcon,
-        iconBg: "bg-amber-100",
-        iconColor: "text-amber-600",
-    },
-    {
-        title: "Overdue",
-        value: 2,
-        description: "Requires attention",
-        icon: AlertTriangleIcon,
-        iconBg: "bg-red-100",
-        iconColor: "text-red-600",
-    },
-    {
-        title: "Completed",
-        value: 124,
-        description: "+12 this month",
-        icon: CheckCircle2Icon,
-        iconBg: "bg-green-100",
-        iconColor: "text-green-600",
-    },
-]
+
 
 /* ================================
    Activity Types
@@ -326,9 +294,44 @@ function ActivityItem({
 ================================ */
 
 export const DashboardHeader = () => {
-    const { data } = useOverview()
+    const [data] = useOverview()
+
     console.log(data);
 
+    const dashboardStats = [
+        {
+            title: "Total Projects",
+            value: data?.totalProjects ?? 0,
+            description: `${data?.activeThisWeek ?? 0} active this week`,
+            icon: FolderIcon,
+            iconBg: "bg-blue-100",
+            iconColor: "text-blue-600",
+        },
+        {
+            title: "Tasks Due Today",
+            value: data?.tasksDueToday ?? 0,
+            description: `Next due in ${data?.nextDueInHours ?? 'not have'} hours`,
+            icon: CalendarIcon,
+            iconBg: "bg-amber-100",
+            iconColor: "text-amber-600",
+        },
+        {
+            title: "Overdue",
+            value: data?.overdue,
+            description: "Requires attention",
+            icon: AlertTriangleIcon,
+            iconBg: "bg-red-100",
+            iconColor: "text-red-600",
+        },
+        {
+            title: "Completed",
+            value: data?.completed ?? 0,
+            description: `+${data?.completedThisMonth ?? 0} this month`,
+            icon: CheckCircle2Icon,
+            iconBg: "bg-green-100",
+            iconColor: "text-green-600",
+        },
+    ]
     return (
         <div className="w-full">
             <div>
@@ -510,7 +513,12 @@ export const MyUpcomingTasksDashboard = () => {
 
 export const DashboardContainer = ({ children }: { children: React.ReactNode }) => {
     return (
-        <EntityContainer header={<DashboardHeader />}>
+        <EntityContainer header={
+            <Suspense fallback={<>Loading...</>}>
+                <DashboardHeader />
+            </Suspense>
+
+        }>
             <div className="flex gap-10 flex-wrap">
                 <ActivityFeedDashboard />
                 <MyUpcomingTasksDashboard />

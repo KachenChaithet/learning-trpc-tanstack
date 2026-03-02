@@ -10,7 +10,9 @@ import { PlusIcon } from "lucide-react"
 import { useState } from "react"
 import { Pagination, PaginationContent, PaginationEllipsis, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from "@/components/ui/pagination"
 import DialogTask, { Formtype } from "./dialog"
-import { useAccessibleProjects, useCreateTask, useMyProjects, useSuspenseTasks } from "../hooks/use-tasks"
+import { useAccessibleProjects, useCreateTask, useMyProjects, useSuspenseTasks, useUpdateStatus } from "../hooks/use-tasks"
+import { TaskStatus } from "@/generated/prisma/enums"
+import { task } from "better-auth/react"
 
 
 export const MytasksHeader = () => {
@@ -223,6 +225,7 @@ type TableProps = {
     date?: SortOrder
     projectId?: string
     tab?: TaskTab
+    view: "assignedToMe" | "assignedByMe"
 }
 
 export const MyTasksTable = ({
@@ -230,18 +233,19 @@ export const MyTasksTable = ({
     priority,
     projectId,
     tab,
+    view,
 }: TableProps) => {
 
-    const [tasks] = useSuspenseTasks({ priority, projectId, date, tab })
+    const [tasks] = useSuspenseTasks({ priority, projectId, date, tab, view })
 
-
+    const { mutate: updateStatus } = useUpdateStatus()
 
     return (
         <Card>
             <Table>
                 <TableHeader>
                     <TableRow>
-                        <TableHead></TableHead>
+                        <TableHead>No.</TableHead>
                         <TableHead>Task Name</TableHead>
                         <TableHead>Project</TableHead>
                         <TableHead>Priority</TableHead>
@@ -258,9 +262,9 @@ export const MyTasksTable = ({
                             </TableCell>
                         </TableRow>
                     ) : (
-                        tasks.map((task) => (
+                        tasks.map((task, index) => (
                             <TableRow key={task.id}>
-                                <TableCell><Checkbox /></TableCell>
+                                <TableCell>{index + 1}</TableCell>
                                 <TableCell className="font-semibold">{task.title}</TableCell>
                                 <TableCell>{task.project?.name}</TableCell>
                                 <TableCell className={`flex items-center gap-3`}>
@@ -274,7 +278,30 @@ export const MyTasksTable = ({
                                         ? new Date(task.dueDate).toLocaleDateString()
                                         : "-"}
                                 </TableCell>
-                                <TableCell>{task.status}</TableCell>
+                                <TableCell>
+                                    {view === 'assignedToMe' ? (
+                                        <EntitySelect
+                                            placeholder="status"
+                                            value={task.status ?? "TODO"}
+                                            onChange={(value) => updateStatus({
+                                                taskId: task.id,
+                                                status: value as TaskStatus
+                                            })}
+                                            options={[
+                                                { label: "TODO", value: "TODO" },
+                                                { label: "IN_PROGRESS", value: "IN_PROGRESS" },
+                                                { label: "DONE", value: "DONE" },
+                                            ]}
+
+                                        />
+                                    ) : (
+                                        <div className="">
+                                            {task.status ?? "TODO"}
+                                        </div>
+                                    )}
+
+
+                                </TableCell>
                             </TableRow>
                         ))
                     )}
@@ -285,6 +312,9 @@ export const MyTasksTable = ({
 }
 
 export const MytasksContainer = () => {
+    type TaskView = "assignedToMe" | "assignedByMe"
+
+    const [view, setView] = useState<TaskView>("assignedToMe")
 
     const [priority, setPriority] = useState<Priority | undefined>()
     const [projectId, setProjectId] = useState<string | undefined>()
@@ -292,25 +322,36 @@ export const MytasksContainer = () => {
     const [activeTab, setActiveTab] = useState<TaskTab>("today")
 
     return (
-        <EntityContainer header={<MytasksHeader />}>
-            <TaskTabs onChange={setActiveTab} value={activeTab} />
+        <>
 
-            <MytasksSelected
-                date={date}
-                priority={priority}
-                projectId={projectId}
-                setDate={setDate}
-                setPriority={setPriority}
-                setProjectId={setProjectId}
-            />
+            <EntityContainer header={<MytasksHeader />}>
+                <Tabs value={view} onValueChange={(v) => setView(v as TaskView)}>
+                    <TabsList>
+                        <TabsTrigger value="assignedToMe">Assigned to Me</TabsTrigger>
+                        <TabsTrigger value="assignedByMe">Assigned by Me</TabsTrigger>
+                    </TabsList>
+                </Tabs>
 
-            <MyTasksTable
-                date={date}
-                priority={priority}
-                projectId={projectId}
-                tab={activeTab}
-            />
+                <TaskTabs onChange={setActiveTab} value={activeTab} />
 
-        </EntityContainer>
+                <MytasksSelected
+                    date={date}
+                    priority={priority}
+                    projectId={projectId}
+                    setDate={setDate}
+                    setPriority={setPriority}
+                    setProjectId={setProjectId}
+                />
+
+                <MyTasksTable
+                    view={view}
+                    date={date}
+                    priority={priority}
+                    projectId={projectId}
+                    tab={activeTab}
+                />
+
+            </EntityContainer>
+        </>
     )
 }

@@ -35,14 +35,34 @@ export const ProjectRouter = createTRPCRouter({
                 }
             })
         }),
-    getMine: protectedProcedure.query(({ ctx }) => {
-        return prisma.project.findMany({
+    getMine: protectedProcedure.query(async ({ ctx }) => {
+        const projects = await prisma.project.findMany({
             where: {
                 projectMembers: {
                     some: {
                         userId: ctx.user.id
                     }
                 },
+            },
+            include: {
+                tasks: {
+                    select: {
+                        status: true
+                    }
+                }
+            }
+        })
+
+        return projects.map(({ tasks, ...project }) => {
+            const total = tasks.length
+            const done = tasks.filter(t => t.status === 'DONE').length
+
+
+            return {
+                ...project,
+                totalTasks: total,
+                completedTasks: done,
+                progress: total === 0 ? 0 : Math.round((done / total) * 100)
             }
         })
     }),

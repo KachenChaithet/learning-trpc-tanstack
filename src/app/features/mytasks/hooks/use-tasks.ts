@@ -1,4 +1,5 @@
 import { trpc } from "@/trpc/client"
+import { exitCode } from "process"
 import { toast } from "sonner"
 
 export const useCreateTask = () => {
@@ -23,10 +24,12 @@ type TaskFilter = {
     priority?: "ALL" | "LOW" | "MEDIUM" | "HIGH"
     date?: "newest" | "oldest"
     tab?: "today" | "week" | "overdue" | "completed"
+    view: "assignedToMe" | "assignedByMe"
+
 }
 
 export const useSuspenseTasks = (filter?: TaskFilter) => {
-    return trpc.tasks.getMany.useSuspenseQuery(filter ?? {})
+    return trpc.tasks.getMany.useSuspenseQuery({ view: filter?.view ?? 'assignedToMe', ...filter })
 }
 
 export const useProjectMembers = (projectId?: string) => {
@@ -47,3 +50,20 @@ export const useAccessibleProjects = () => {
     return trpc.tasks.getMyAccessible.useQuery()
 }
 
+export const useUpdateStatus = () => {
+    const utils = trpc.useUtils()
+    return trpc.tasks.updateStatus.useMutation({
+        onSuccess: (data) => {
+            toast.success(`update ${data.title}`)
+            utils.tasks.getMany.invalidate()
+            utils.projects.getMine.invalidate()
+        },
+        onError: (err) => {
+            if (err.data?.code === "FORBIDDEN") {
+                toast.error("You don't have permission")
+                return
+            }
+            toast.error(err.message)
+        }
+    })
+}

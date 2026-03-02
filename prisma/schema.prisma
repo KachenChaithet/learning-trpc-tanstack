@@ -26,7 +26,8 @@ model User {
   sessions            Session[]
   accounts            Account[]
   projectMembers      ProjectMember[]
-  tasks               Task[]               @relation("UserTasks")
+  assignedTasks       Task[]               @relation("UserTasks")
+  createdTasks        Task[]               @relation("UserCreatedTasks")
   projectJoinRequests ProjectJoinRequest[]
 
   @@map("user")
@@ -96,6 +97,9 @@ model Task {
 
   assigneeId String?
   assignee   User?   @relation("UserTasks", fields: [assigneeId], references: [id])
+
+  createdById String
+  createdBy   User   @relation("UserCreatedTasks", fields: [createdById], references: [id])
 
   dueDate DateTime?
 

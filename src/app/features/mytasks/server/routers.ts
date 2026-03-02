@@ -1,3 +1,4 @@
+import { TaskStatus } from "@/generated/prisma/enums";
 import { prisma } from "@/lib/db";
 import { createTRPCRouter, protectedProcedure } from "@/trpc/init";
 import { TRPCError } from "@trpc/server";
@@ -43,11 +44,28 @@ export const TaskRouter = createTRPCRouter({
                     ...(input.description !== undefined && {
                         description: input.description
                     }),
+                    createdById: ctx.user.id,
                     dueDate: input.dueDate,
                     status: input.status,
                     priority: input.priority
                 }
             })
+        }),
+    updateStatus: protectedProcedure
+        .input(z.object({ taskId: z.string(), status: z.nativeEnum(TaskStatus) }))
+        .mutation(async ({ ctx, input }) => {
+            const task = await prisma.task.update({
+                where: {
+                    id: input.taskId,
+                    assigneeId: ctx.user.id
+                },
+                data: {
+                    status: input.status
+                }
+            })
+
+            return task
+
         }),
     getMany: protectedProcedure
         .input(
@@ -55,7 +73,8 @@ export const TaskRouter = createTRPCRouter({
                 projectId: z.string().optional(),
                 priority: z.enum(["ALL", "LOW", "MEDIUM", "HIGH"]).optional(),
                 date: z.enum(["newest", "oldest"]).optional(),
-                tab: z.enum(["today", "week", "overdue", "completed"]).optional()
+                tab: z.enum(["today", "week", "overdue", "completed"]).optional(),
+                view: z.enum(["assignedToMe", "assignedByMe"]),
             })
         )
         .query(({ ctx, input }) => {
@@ -72,7 +91,13 @@ export const TaskRouter = createTRPCRouter({
 
             return prisma.task.findMany({
                 where: {
-                    assigneeId: ctx.user.id,
+                    ...(input.view === 'assignedToMe' && {
+                        assigneeId: ctx.user.id
+                    }),
+
+                    ...(input.view === 'assignedByMe' && {
+                        createdById: ctx.user.id
+                    }),
 
                     ...(input?.projectId &&
                         input.projectId !== "ALL" && {
@@ -89,6 +114,9 @@ export const TaskRouter = createTRPCRouter({
                         dueDate: {
                             gte: now
                         },
+                        status: {
+                            not: 'DONE'
+                        }
                     }),
 
                     ...(input?.tab === "week" && {
