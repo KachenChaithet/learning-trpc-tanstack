@@ -16,6 +16,8 @@ import {
 } from "lucide-react"
 import { useOverview } from "../hooks/use-dashboards"
 import { Suspense } from "react"
+import { useGetRecent } from "../../activity/hook/use-activity"
+import { formatDistanceToNow } from "date-fns"
 
 /* ================================
    Dashboard Stats
@@ -161,68 +163,33 @@ export const activityFeed: ActivityItem[] = [
 ]
 
 /* ================================
-   Presentational View Type
+    type activity
 ================================ */
+type TaskCreatedMeta = {
+    title: string
+}
 
-interface ActivityItemViewProps {
-    name: string
+type TaskStatusChangedMeta = {
+    from: string
+    to: string
+}
+
+type ActivityItemViewProps = {
+    name?: string
     action: string
     target?: string
     comment?: string
-    time: string
+    createdAt: Date
     category?: string
     extra?: React.ReactNode
     attachments?: {
         id: string
-        fileName: string
         fileUrl: string
+        fileName: string
     }[]
     isSystem?: boolean
 }
 
-/* ================================
-   Mapper Function
-================================ */
-
-function mapFeedToView(feed: ActivityItem): ActivityItemViewProps {
-    let action = ""
-    let comment: string | undefined
-    let attachments
-    let extra: React.ReactNode
-
-    switch (feed.type) {
-        case "status_update":
-            action = "completed"
-            extra = <Badge variant="secondary">{feed.metadata?.status}</Badge>
-            break
-
-        case "comment":
-            action = "commented on"
-            comment = feed.metadata?.comment
-            break
-
-        case "project_created":
-            action = "created project"
-            break
-
-        case "file_attachment":
-            action = "attached files to"
-            attachments = feed.metadata?.attachments
-            break
-    }
-
-    return {
-        name: feed.actor.name,
-        action,
-        target: feed.target?.name,
-        comment,
-        attachments,
-        extra,
-        time: new Date(feed.createdAt).toLocaleString(),
-        category: feed.projectCategory,
-        isSystem: feed.actor.isSystem,
-    }
-}
 
 /* ================================
    Activity Item Component
@@ -233,40 +200,48 @@ function ActivityItem({
     action,
     target,
     comment,
-    time,
+    createdAt,
     category,
     extra,
     attachments,
     isSystem,
 }: ActivityItemViewProps) {
+
+    const displayName = isSystem ? "System" : name ?? "Unknown"
+    const timeLabel = formatDistanceToNow(createdAt, { addSuffix: true })
+
     return (
         <div className="flex gap-4 p-4">
             <Avatar className="h-9 w-9">
-                <AvatarImage src={isSystem ? undefined : "/avatar.png"} />
+                {!isSystem && (
+                    <AvatarImage src="/avatar.png" />
+                )}
                 <AvatarFallback>
-                    {isSystem ? "S" : name?.[0]}
+                    {isSystem ? "S" : displayName[0]}
                 </AvatarFallback>
             </Avatar>
 
             <div className="flex-1 space-y-1">
                 <div className="text-sm">
-                    <span className="font-medium">{name}</span>{" "}
+                    <span className="font-medium">{displayName}</span>{" "}
                     <span className="text-muted-foreground">{action} </span>
+
                     {target && (
                         <span className="text-primary hover:underline cursor-pointer">
                             {target}
                         </span>
                     )}{" "}
+
                     {extra}
                 </div>
 
                 {comment && (
                     <p className="text-sm text-muted-foreground italic border-l-2 pl-3">
-                        "{comment}"
+                        “{comment}”
                     </p>
                 )}
 
-                {attachments && attachments.length > 0 && (
+                {attachments?.length ? (
                     <div className="flex gap-2 mt-2">
                         {attachments.map((file) => (
                             <a
@@ -278,11 +253,11 @@ function ActivityItem({
                             </a>
                         ))}
                     </div>
-                )}
-
+                ) : null}
 
                 <div className="text-xs text-muted-foreground">
-                    {time} {category && `• ${category}`}
+                    {timeLabel}
+                    {category && ` • ${category}`}
                 </div>
             </div>
         </div>
@@ -296,7 +271,6 @@ function ActivityItem({
 export const DashboardHeader = () => {
     const [data] = useOverview()
 
-    console.log(data);
 
     const dashboardStats = [
         {
@@ -375,6 +349,8 @@ export const DashboardHeader = () => {
 ================================ */
 
 export const ActivityFeedDashboard = () => {
+    const { data } = useGetRecent()
+
     return (
         <Card className="w-full  flex-2">
             <CardHeader className="flex flex-row items-center justify-between">
@@ -384,19 +360,13 @@ export const ActivityFeedDashboard = () => {
                 </Button>
             </CardHeader>
 
-            <CardContent className="p-0">
-                {activityFeed.map((feed, index) => {
-                    const view = mapFeedToView(feed)
-
-                    return (
-                        <div key={feed.id}>
-                            <ActivityItem {...view} />
-                            {index !== activityFeed.length - 1 && (
-                                <Separator />
-                            )}
-                        </div>
-                    )
-                })}
+            <CardContent className="p-0 max-h-100 overflow-auto">
+                {data?.map((a) => (
+                    <ActivityItem
+                        key={a.id}
+                        {...a}
+                    />
+                ))}
             </CardContent>
 
             <CardFooter className="justify-center border-t">
@@ -512,6 +482,7 @@ export const MyUpcomingTasksDashboard = () => {
 ================================ */
 
 export const DashboardContainer = ({ children }: { children: React.ReactNode }) => {
+
     return (
         <EntityContainer header={
             <Suspense fallback={<>Loading...</>}>

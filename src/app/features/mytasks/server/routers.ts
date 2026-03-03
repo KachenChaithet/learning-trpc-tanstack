@@ -2,6 +2,7 @@ import { TaskStatus } from "@/generated/prisma/enums";
 import { prisma } from "@/lib/db";
 import { createTRPCRouter, protectedProcedure } from "@/trpc/init";
 import { TRPCError } from "@trpc/server";
+import { ReceiptRussianRuble } from "lucide-react";
 import z from "zod";
 
 export const TaskRouter = createTRPCRouter({
@@ -36,36 +37,103 @@ export const TaskRouter = createTRPCRouter({
                 throw new TRPCError({ code: "FORBIDDEN" })
             }
 
-            return prisma.task.create({
-                data: {
-                    title: input.title,
-                    projectId: input.projectId,
-                    assigneeId: input.assigneeId,
-                    ...(input.description !== undefined && {
-                        description: input.description
-                    }),
-                    createdById: ctx.user.id,
-                    dueDate: input.dueDate,
-                    status: input.status,
-                    priority: input.priority
+            return prisma.$transaction(async (tx) => {
+                const task = await tx.task.create({
+                    data: {
+                        title: input.title,
+                        projectId: input.projectId,
+                        assigneeId: input.assigneeId,
+                        ...(input.description !== undefined && {
+                            description: input.description
+                        }),
+                        createdById: ctx.user.id,
+                        dueDate: input.dueDate,
+                        status: input.status,
+                        priority: input.priority
+                    }
+                })
+
+                await tx.activityLog.create({
+                    data: {
+                        type: 'TASK_CREATED',
+                        actorId: ctx.user.id,
+                        projectId: input.projectId,
+                        taskId: task.id,
+                        metadata: {
+                            title: task.title
+                        }
+                    }
+                })
+                if (input.assigneeId) {
+                    const assignee = await tx.user.findUnique({
+                        where: {
+                            id: input.assigneeId
+                        },
+                        select: {
+                            name: true
+                        }
+                    })
+                    await tx.activityLog.create({
+                        data: {
+                            type: 'TASK_ASSIGNED',
+                            actorId: ctx.user.id,
+                            projectId: task.projectId,
+                            taskId: task.id,
+                            metadata: {
+                                assigneeId: input.assigneeId,
+                                assigneeName: assignee?.name ?? "Unknown User",
+                            }
+                        }
+                    })
+
                 }
+
+                return task
             })
+
         }),
     updateStatus: protectedProcedure
         .input(z.object({ taskId: z.string(), status: z.nativeEnum(TaskStatus) }))
         .mutation(async ({ ctx, input }) => {
-            const task = await prisma.task.update({
-                where: {
-                    id: input.taskId,
-                    assigneeId: ctx.user.id
-                },
-                data: {
-                    status: input.status
+            return prisma.$transaction(async (tx) => {
+
+                const existingTask = await tx.task.findUnique({
+                    where: { id: input.taskId },
+                    select: { status: true, projectId: true }
+                })
+
+                if (!existingTask) {
+                    throw new TRPCError({ code: "NOT_FOUND" })
                 }
+
+                if (existingTask.status === input.status) {
+                    return
+                }
+
+                const updatedTask = await tx.task.update({
+                    where: {
+                        id: input.taskId,
+                        assigneeId: ctx.user.id
+                    },
+                    data: {
+                        status: input.status
+                    }
+                })
+                await tx.activityLog.create({
+                    data: {
+                        type: "TASK_STATUS_CHANGED",
+                        actorId: ctx.user.id,
+                        projectId: existingTask.projectId,
+                        taskId: input.taskId,
+                        metadata: {
+                            form: existingTask.status,
+                            to: input.status
+                        }
+                    }
+                })
+
+                return updatedTask
             })
-
-            return task
-
         }),
     getMany: protectedProcedure
         .input(

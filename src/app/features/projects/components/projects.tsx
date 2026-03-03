@@ -379,7 +379,6 @@ export const ProjectCardAdd = () => {
 
 export const ProjectList = ({ search }: { search: string }) => {
     const [projects] = useSuspenseProjectsMine()
-    console.log(projects);
 
 
     const filteredProjects = projects.filter((project) =>

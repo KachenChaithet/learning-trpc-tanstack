@@ -29,6 +29,7 @@ model User {
   assignedTasks       Task[]               @relation("UserTasks")
   createdTasks        Task[]               @relation("UserCreatedTasks")
   projectJoinRequests ProjectJoinRequest[]
+  activityLogs        ActivityLog[]
 
   @@map("user")
 }
@@ -68,8 +69,9 @@ model Project {
   tasks               Task[]
   projectJoinRequests ProjectJoinRequest[]
 
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  activityLogs ActivityLog[]
 }
 
 enum TaskStatus {
@@ -103,8 +105,9 @@ model Task {
 
   dueDate DateTime?
 
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  activityLogs ActivityLog[]
 
   @@index([projectId])
   @@index([assigneeId])
@@ -133,6 +136,45 @@ model ProjectJoinRequest {
   @@unique([projectId, userId])
   @@index([projectId])
   @@index([userId])
+}
+
+enum ActivityType {
+  TASK_CREATED //done
+  TASK_STATUS_CHANGED //done
+  TASK_PRIORITY_CHANGED //todo
+  TASK_ASSIGNED //done
+  TASK_UNASSIGNED //todo
+  TASK_DELETED //todo
+
+  PROJECT_CREATED //done
+  PROJECT_MEMBER_ADDED //todo
+  PROJECT_MEMBER_REMOVED //todo
+
+  COMMENT_ADDED //todo
+}
+
+model ActivityLog {
+  id String @id @default(cuid())
+
+  type ActivityType
+
+  actorId String
+  actor   User   @relation(fields: [actorId], references: [id])
+
+  projectId String?
+  project   Project? @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  taskId String?
+  task   Task?   @relation(fields: [taskId], references: [id])
+
+  metadata Json?
+
+  createdAt DateTime @default(now())
+
+  @@index([projectId])
+  @@index([taskId])
+  @@index([actorId])
+  @@index([createdAt])
 }
 
 model Session {

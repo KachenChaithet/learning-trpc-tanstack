@@ -20,20 +20,38 @@ export const ProjectRouter = createTRPCRouter({
             visibility: z.enum(["PRIVATE", "PUBLIC"])
 
         }))
-        .mutation(({ ctx, input }) => {
-            return prisma.project.create({
-                data: {
-                    name: input.name,
-                    description: input.description,
-                    visibility: input.visibility,
-                    projectMembers: {
-                        create: {
-                            userId: ctx.user.id,
-                            role: "OWNER"
+        .mutation(async ({ ctx, input }) => {
+            return await prisma.$transaction(async (tx) => {
+                const project = await tx.project.create({
+                    data: {
+                        name: input.name,
+                        description: input.description,
+                        visibility: input.visibility,
+                        projectMembers: {
+                            create: {
+                                userId: ctx.user.id,
+                                role: "OWNER"
+                            }
                         }
                     }
-                }
+                })
+
+                await tx.activityLog.create({
+                    data: {
+                        type: 'PROJECT_CREATED',
+                        actorId: ctx.user.id,
+                        projectId: project.id,
+                        metadata: {
+                            projectName: project.name
+                        }
+
+                    }
+                })
+
+                return project
             })
+
+
         }),
     getMine: protectedProcedure.query(async ({ ctx }) => {
         const projects = await prisma.project.findMany({

@@ -3,6 +3,7 @@ import { baseProcedure, createTRPCRouter, protectedProcedure } from '../init';
 import { ProjectRouter } from '@/app/features/projects/server/routers';
 import { TaskRouter } from '@/app/features/mytasks/server/routers';
 import { DashboardRouter } from '@/app/features/dashboard/server/routers';
+import { activityRouter } from '@/app/features/activity/server/routers';
 export const appRouter = createTRPCRouter({
     hello: protectedProcedure
         .query(({ ctx, input }) => {
@@ -12,7 +13,8 @@ export const appRouter = createTRPCRouter({
         }),
     projects: ProjectRouter,
     tasks: TaskRouter,
-    dashboard: DashboardRouter
+    dashboard: DashboardRouter,
+    activity: activityRouter,
 
 });
 // export type definition of API
