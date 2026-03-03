@@ -1,7 +1,7 @@
 "use client"
 import { Sidebar, SidebarContent, SidebarFooter, SidebarGroup, SidebarGroupContent, SidebarHeader, SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarMenuSubItem, SidebarTrigger } from "@/components/ui/sidebar"
 import { authClient } from "@/lib/auth-client"
-import { ActivityIcon, CheckSquareIcon, FolderKanbanIcon, LayoutDashboardIcon, LogOutIcon, PlugIcon, SettingsIcon, ShieldCheckIcon, UsersIcon } from "lucide-react"
+import { Activity, ActivityIcon, CheckSquareIcon, FolderKanbanIcon, HistoryIcon, LayoutDashboardIcon, LogOutIcon, PlugIcon, SettingsIcon, ShieldCheckIcon, UsersIcon } from "lucide-react"
 import Image from "next/image"
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
@@ -25,6 +25,11 @@ const menuItems = [
                 title: "My Tasks",
                 icon: CheckSquareIcon,
                 url: "/my-tasks"
+            },
+            {
+                title: "Activity Feed",
+                icon: HistoryIcon,
+                url: "/activity"
             },
         ]
     },
