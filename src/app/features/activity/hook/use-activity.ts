@@ -19,7 +19,7 @@ export const useInfiniteActivities = (filters: Filters) => {
     const query = trpc.activity.list.useInfiniteQuery(
         {
             ...filters,
-            take: 20,
+            take: 2,
         },
         {
             initialCursor: null,

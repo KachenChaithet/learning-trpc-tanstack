@@ -124,3 +124,12 @@ export const useRejectJoinRequest = () => {
         }
     })
 }
+
+type Filters = {
+    search?: string
+    status?: "planning" | "in_progress" | "on_hold" | "completed"
+    owner?: string
+}
+export const useFilterProject = (filters: Filters) => {
+    return trpc.projects.filterProjects.useQuery(filters)
+}

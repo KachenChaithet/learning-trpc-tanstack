@@ -6,6 +6,7 @@ import { exit, rawListeners } from "process";
 import z, { string } from "zod";
 import { owners } from "../components/projects";
 import { JoinRequestStatus } from "@/generated/prisma/enums";
+import { Prisma } from "@/generated/prisma/client";
 
 export const ProjectRouter = createTRPCRouter({
     create: protectedProcedure
@@ -352,6 +353,113 @@ export const ProjectRouter = createTRPCRouter({
             select: { id: true, name: true },
             orderBy: { name: "asc" },
         })
-    })
+    }),
+    ownerProject: protectedProcedure.query(async ({ ctx }) => {
+        const owners = await prisma.projectMember.findMany({
+            where: {
+                project: {
+                    projectMembers: {
+                        some: {
+                            userId: ctx.user.id
+                        }
+                    }
+                },
+                role: 'OWNER'
+            },
+            distinct: ["userId"],
+            select: {
+                user: {
+                    select: {
+                        id: true,
+                        name: true
+                    }
+                }
+            }
+        })
+        return owners.map(o => o.user)
+    }),
+    filterProjects: protectedProcedure
+        .input(z.object({
+            search: z.string().optional(),
+            status: z.enum(["planning", "in_progress", "on_hold", "completed"]).default("planning").optional(),
+            owner: z.string().optional()
+        }))
+        .query(async ({ ctx, input }) => {
 
+            const conditions: Prisma.ProjectWhereInput[] = []
+
+            conditions.push({
+                projectMembers: {
+                    some: { userId: ctx.user.id }
+                }
+            })
+
+            if (input.owner) {
+                conditions.push({
+                    projectMembers: {
+                        some: {
+                            userId: input.owner,
+                            role: "OWNER"
+                        }
+                    }
+                })
+            }
+
+            if (input.search) {
+                conditions.push({
+                    OR: [
+                        {
+                            name: {
+                                contains: input.search,
+                                mode: "insensitive"
+                            }
+                        },
+                        {
+                            description: {
+                                contains: input.search,
+                                mode: "insensitive"
+                            }
+                        }
+                    ]
+                })
+            }
+
+            const projects = await prisma.project.findMany({
+                where: {
+                    AND: conditions
+                },
+                include: {
+                    tasks: {
+                        select: { status: true }
+                    }
+                }
+            })
+
+            const mappedProjects = projects.map(({ tasks, ...project }) => {
+
+                const total = tasks.length
+                const done = tasks.filter(t => t.status === "DONE").length
+
+                let status: "planning" | "in_progress" | "on_hold" | "completed" = "planning"
+
+                if (total === 0) status = "planning"
+                else if (tasks.some(t => t.status === "IN_PROGRESS")) status = "in_progress"
+                else if (tasks.every(t => t.status === "DONE")) status = "completed"
+                else status = "on_hold"
+
+                return {
+                    ...project,
+                    totalTasks: total,
+                    completedTasks: done,
+                    progress: total === 0 ? 0 : Math.round((done / total) * 100),
+                    status
+                }
+            })
+
+            if (input.status) {
+                return mappedProjects.filter(p => p.status === input.status)
+            }
+
+            return mappedProjects
+        })
 })

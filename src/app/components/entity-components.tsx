@@ -6,8 +6,7 @@ type EntityContainerProps = {
     children: React.ReactNode
     header?: React.ReactNode
     search?: React.ReactNode
-    statusSelect?: React.ReactNode
-    ownerSelect?: React.ReactNode
+    select?: React.ReactNode
 
 }
 
@@ -76,7 +75,7 @@ export const EntitySelect = ({
     )
 }
 
-export const EntityContainer = ({ children, header, search, ownerSelect, statusSelect }: EntityContainerProps) => {
+export const EntityContainer = ({ children, header, search, select }: EntityContainerProps) => {
     return (
         <div className="p-4 md:px-10 md:py-6 h-full w-full">
             <div className="w-full flex flex-col gap-y-8 h-full">
@@ -87,13 +86,10 @@ export const EntityContainer = ({ children, header, search, ownerSelect, statusS
                             {search}
                         </div>
 
-                        <div className="w-48">
-                            {statusSelect}
+                        <div className="">
+                            {select}
                         </div>
 
-                        <div className="w-48">
-                            {ownerSelect}
-                        </div>
                     </div>
                     {children}
                 </div>

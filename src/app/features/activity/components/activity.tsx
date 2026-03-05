@@ -141,7 +141,11 @@ export const ActivityList = ({ activities, fetchNextPage, hasNextPage, isFetchin
     if (isLoading) {
         return <div>Loading...</div>
     }
+
     console.log(activities);
+    console.log(hasNextPage);
+
+
     const formatName = (fullName?: string) => {
         if (!fullName) return "Unknown"
 
@@ -191,7 +195,7 @@ export const ActivityList = ({ activities, fetchNextPage, hasNextPage, isFetchin
         })
     }
     return (
-        <div className="space-y-8">
+        <div className="space-y-8 text-center">
             {Object.entries(grouped).map(([dateKey, items]) => (
                 <div key={dateKey} className="space-y-4">
 
@@ -240,6 +244,8 @@ export const ActivityList = ({ activities, fetchNextPage, hasNextPage, isFetchin
             {hasNextPage && (
                 <Button
                     variant={'outline'}
+                    className="text-center "
+                    size={'lg'}
                     onClick={fetchNextPage}
                     disabled={isFetchingNextPage}
                 >

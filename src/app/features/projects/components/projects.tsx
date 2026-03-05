@@ -4,12 +4,15 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card"
 import { Progress } from "@/components/ui/progress"
 import { Banknote, CalendarIcon, Clock, EllipsisVerticalIcon, FileClock, PlusIcon, ReceiptRussianRuble, UserPlusIcon } from "lucide-react"
-import { Suspense, useState } from "react"
+import React, { Suspense, useState } from "react"
 import DialogProjects, { DialogProjectJoin, DialogProjectRequest, Formtype } from "./dialog"
-import { useCreateProject, useRemoveProject, useSuspenseProjectsMine, useUpdateProject } from "../hooks/use-projects"
+import { useCreateProject, useFilterProject, useRemoveProject, useSuspenseProjectsMine, useUpdateProject } from "../hooks/use-projects"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Spinner } from "@/components/ui/spinner"
+import { trpc } from "@/trpc/client"
+import { AppRouter } from "@/trpc/routers/_app"
+import { inferRouterOutputs } from "@trpc/server"
 
 
 
@@ -198,7 +201,7 @@ export const ProjectRequest = ({ trigger }: ProjectJoinProps) => {
 
 type ProjectSearchProps = {
     search: string
-    setSearch: React.Dispatch<React.SetStateAction<string>>
+    setSearch: (value: string) => void
 }
 
 export const ProjectSearch = ({ search, setSearch }: ProjectSearchProps) => {
@@ -206,37 +209,46 @@ export const ProjectSearch = ({ search, setSearch }: ProjectSearchProps) => {
     return (
         <EntitySearch
             value={search}
-            onChange={setSearch}
+            onChange={(value) =>
+                setSearch(value)
+
+            }
             placeholder="Search projects"
         />
     )
 }
+type ProjectSelectProps = {
+    filters: ProjectFiltersState
+    onChage: (filters: ProjectFiltersState) => void
+    ownerOptions: { value: string, label: string }[]
+}
 
-export const ProjectStatusSelect = () => {
-    const [status, setStatus] = useState("")
+export const ProjectSelect = ({ filters, onChage, ownerOptions }: ProjectSelectProps) => {
     return (
-        <EntitySelect
+        <div className="flex gap-2">
+            <EntitySelect
 
-            value={status}
-            onChange={setStatus}
-            options={projectStatusOptions}
-            placeholder="Select status"
+                value={filters.status}
+                onChange={(value) =>
+                    onChage({ ...filters, status: value as ProjectFiltersState['status'] })
+                }
+                options={projectStatusOptions}
+                placeholder="Select status"
 
-        />
+            />
+            <EntitySelect
+                value={filters.owner}
+                onChange={(value) =>
+                    onChage({ ...filters, owner: value })
+                }
+                options={ownerOptions}
+                placeholder="Select Owner"
+            />
+        </div>
     )
 }
 
-export const ProjectOwnderSelect = () => {
-    const [owner, setOwner] = useState("")
-    return (
-        <EntitySelect
-            value={owner}
-            onChange={setOwner}
-            options={owners}
-            placeholder="Select Owner"
-        />
-    )
-}
+
 
 type ProjectCardProps = {
     title: string
@@ -376,21 +388,18 @@ export const ProjectCardAdd = () => {
 
     )
 }
+type RouterOutputs = inferRouterOutputs<AppRouter>
+type Project = RouterOutputs["projects"]["filterProjects"][number]
+type ProjectListProps = {
+    projects: Project[]
+}
+export const ProjectList = ({ projects }: ProjectListProps) => {
 
-export const ProjectList = ({ search }: { search: string }) => {
-    const [projects] = useSuspenseProjectsMine()
 
-
-    const filteredProjects = projects.filter((project) =>
-        project.name.toLocaleLowerCase().includes(search.toLocaleLowerCase()) ||
-        (project.description ?? "")
-            .toLowerCase()
-            .includes(search.toLocaleLowerCase())
-    )
 
     return (
         <>
-            {filteredProjects.map((project) => (
+            {projects.map((project) => (
                 <ProjectCard
                     key={project.id}
                     id={project.id}
@@ -408,22 +417,41 @@ export const ProjectList = ({ search }: { search: string }) => {
     )
 }
 type ProjectContainerProps = {
-    search: string
-    setSearch: React.Dispatch<React.SetStateAction<string>>
     children: React.ReactNode
 }
+type ProjectFiltersState = {
+    search: string
+    status: "planning" | "in_progress" | "on_hold" | "completed"
+    owner: string
+}
 
-export const ProjectContainer = ({ children, search, setSearch }: ProjectContainerProps) => {
+export const ProjectContainer = ({ children }: ProjectContainerProps) => {
+    const [filters, setFilters] = useState<ProjectFiltersState>({
+        search: '',
+        status: "planning",
+        owner: "",
+    })
+    const { data: owners } = trpc.projects.ownerProject.useQuery()
 
+    const { data: projects = [], isLoading: isProjects } = useFilterProject(filters)
+
+    if (isProjects) return <p>Loading...</p>
+
+    const ownerOptions = owners?.map((o) => ({
+        value: o.id,
+        label: o.name ?? "Unknow User"
+    })) ?? []
     return (
         <EntityContainer
             header={<ProjectHeader />}
-            search={<ProjectSearch search={search} setSearch={setSearch} />}
-            statusSelect={<ProjectStatusSelect />}
-            ownerSelect={<ProjectOwnderSelect />}
+            search={<ProjectSearch search={filters.search} setSearch={(value) => setFilters((prev) => ({
+                ...prev,
+                search: value
+            }))} />}
+            select={<ProjectSelect filters={filters} onChage={setFilters} ownerOptions={ownerOptions} />}
         >
             <div className="grid md:grid-cols-4 grid-cols-1 gap-4">
-                {children}
+                <ProjectList projects={projects} />
             </div>
         </EntityContainer>
     )

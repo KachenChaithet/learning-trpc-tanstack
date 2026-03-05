@@ -97,6 +97,7 @@ export const activityRouter = createTRPCRouter({
             cursor: z.string().nullish(),
         }))
         .query(async ({ ctx, input }) => {
+            console.log("cursor:", input.cursor)
             const items = await prisma.activityLog.findMany({
                 where: {
                     project: {
