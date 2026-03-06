@@ -54,9 +54,10 @@ export const useUpdateStatus = () => {
     const utils = trpc.useUtils()
     return trpc.tasks.updateStatus.useMutation({
         onSuccess: (data) => {
-            toast.success(`update ${data.title}`)
+            toast.success(`update ${data?.title}`)
             utils.tasks.getMany.invalidate()
             utils.projects.getMine.invalidate()
+            utils.tasks.myUpcomingTasks.invalidate()
         },
         onError: (err) => {
             if (err.data?.code === "FORBIDDEN") {

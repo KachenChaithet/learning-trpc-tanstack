@@ -18,6 +18,10 @@ import { useOverview } from "../hooks/use-dashboards"
 import { Suspense } from "react"
 import { useGetRecent } from "../../activity/hook/use-activity"
 import { formatDistanceToNow } from "date-fns"
+import Link from "next/link"
+import { trpc } from "@/trpc/client"
+import { useUpdateStatus } from "../../mytasks/hooks/use-tasks"
+import { CreateTaskDialog } from "../../mytasks/components/mytasks"
 
 /* ================================
    Dashboard Stats
@@ -352,26 +356,23 @@ export const ActivityFeedDashboard = () => {
     const { data } = useGetRecent()
 
     return (
-        <Card className="w-full  flex-2">
+        <Card className="w-full flex-2 flex flex-col">
             <CardHeader className="flex flex-row items-center justify-between">
                 <h2 className="text-lg font-semibold">Activity Feed</h2>
-                <Button variant="link" size="sm">
-                    Filters
-                </Button>
+
             </CardHeader>
 
-            <CardContent className="p-0 max-h-100 overflow-auto">
+            <CardContent className="p-0 max-h-100 overflow-auto flex-1">
                 {data?.map((a) => (
-                    <ActivityItem
-                        key={a.id}
-                        {...a}
-                    />
+                    <ActivityItem key={a.id} {...a} />
                 ))}
             </CardContent>
 
             <CardFooter className="justify-center border-t">
-                <Button variant="link" size="sm">
-                    View Full Activity Log
+                <Button variant="link" size="sm" asChild>
+                    <Link href={'/activity'}>
+                        View Full Activity Log
+                    </Link>
                 </Button>
             </CardFooter>
         </Card>
@@ -435,42 +436,80 @@ const tasks: Task[] = [
     },
 ]
 
+const getDueLabel = (date: Date | null) => {
+    if (!date) return ""
+
+    const today = new Date()
+    const tomorrow = new Date()
+
+    tomorrow.setDate(today.getDate() + 1)
+
+    if (date.toDateString() === today.toDateString()) {
+        return "Today"
+    }
+
+    if (date.toDateString() === tomorrow.toDateString()) {
+        return "Tomorrow"
+    }
+
+    return date.toLocaleDateString("en-US", {
+        month: "short",
+        day: "numeric"
+    })
+}
+
 
 export const MyUpcomingTasksDashboard = () => {
+    const { data: tasks = [] } = trpc.tasks.myUpcomingTasks.useQuery()
+    const { mutate: updateStatus } = useUpdateStatus()
     return (
         <Card className="w-full  flex-1">
             <CardHeader className="flex flex-row items-center justify-between">
                 <h2 className="text-lg font-semibold">My Upcoming Tasks</h2>
-                <Button variant="link" size="sm">
-                    <PlusIcon className="size-6" />
-                </Button>
+
             </CardHeader>
-            <CardContent className="space-y-5 max-h-100 overflow-auto">
-                {tasks.map((task) => (
-                    <Card className="" key={task.id}>
-                        <CardContent className="flex gap-3 ">
-                            <Checkbox className="mt-1" />
-                            <div className="space-y-2">
-                                <p className="font-medium">{task.title}</p>
-                                <div className="flex items-center gap-2">
-                                    <Badge className="bg-muted-foreground/20 text-muted-foreground">
-                                        {task.dueDate}
-                                    </Badge>
-                                    <span className="text-sm text-muted-foreground">
-                                        {task.category}
-                                    </span>
+            <CardContent className="space-y-5 max-h-100 overflow-auto flex-1">
+                {tasks?.length > 0 ? (
+                    tasks?.map((task) => (
+                        <Card className="" key={task.id}>
+                            <CardContent className="flex gap-3 ">
+                                <Checkbox
+                                    className="mt-1"
+                                    onCheckedChange={(checked) =>
+                                        updateStatus({
+                                            status: checked ? 'DONE' : 'TODO',
+                                            taskId: task.id
+                                        })}
+                                />
+                                <div className="space-y-2">
+                                    <p className="font-medium">{task.taskTitle}</p>
+                                    <div className="flex items-center gap-2">
+                                        <Badge className="bg-muted-foreground/20 text-muted-foreground">
+                                            {getDueLabel(task.dueDate)}
+                                        </Badge>
+                                        <span className="text-sm text-muted-foreground">
+                                            {task.projectName}
+                                        </span>
+                                    </div>
                                 </div>
-                            </div>
-                        </CardContent>
-                    </Card>
-                ))}
+                            </CardContent>
+                        </Card>
+                    ))
+                ) : (
+                    <div className="flex justify-center items-center min-h-full">
+                        No tasks found
+                    </div>
+                )}
             </CardContent>
 
             <CardFooter>
 
-                <div className="border-2 border-dashed rounded-2xl p-4 text-center text-muted-foreground hover:bg-muted/40 cursor-pointer transition w-full">
-                    + Add Task
-                </div>
+                <CreateTaskDialog mode="create" trigger={
+                    <div className="border-2 border-dashed rounded-2xl p-4 text-center text-muted-foreground hover:bg-muted/40 cursor-pointer transition w-full">
+                        + Add Task
+                    </div>
+                } />
+
             </CardFooter>
         </Card>
     )

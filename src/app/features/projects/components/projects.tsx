@@ -435,7 +435,6 @@ export const ProjectContainer = ({ children }: ProjectContainerProps) => {
 
     const { data: projects = [], isLoading: isProjects } = useFilterProject(filters)
 
-    if (isProjects) return <p>Loading...</p>
 
     const ownerOptions = owners?.map((o) => ({
         value: o.id,
@@ -451,7 +450,13 @@ export const ProjectContainer = ({ children }: ProjectContainerProps) => {
             select={<ProjectSelect filters={filters} onChage={setFilters} ownerOptions={ownerOptions} />}
         >
             <div className="grid md:grid-cols-4 grid-cols-1 gap-4">
-                <ProjectList projects={projects} />
+                {
+                    isProjects ? (
+                        <p>Loading...</p>
+                    ) : (
+                        <ProjectList projects={projects} />
+                    )
+                }
             </div>
         </EntityContainer>
     )

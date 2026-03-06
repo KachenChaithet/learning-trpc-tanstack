@@ -124,9 +124,9 @@ export function TaskTabs({ value, onChange }: TaskTabsProps) {
 
                 <TabsTrigger value="overdue">
                     Overdue
-                    <span className="ml-2 text-xs bg-red-100 text-red-600 px-2 py-0.5 rounded">
+                    {/* <span className="ml-2 text-xs bg-red-100 text-red-600 px-2 py-0.5 rounded">
                         2
-                    </span>
+                    </span> */}
                 </TabsTrigger>
 
                 <TabsTrigger value="completed">

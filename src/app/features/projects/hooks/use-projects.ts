@@ -19,7 +19,7 @@ export const useCreateProject = () => {
     return trpc.projects.create.useMutation({
         onSuccess: async (data) => {
             toast.success(`Project "${data.name}"`)
-            await utils.projects.getMine.invalidate()
+            await utils.projects.filterProjects.invalidate()
         },
         onError: (err) => {
             toast.error(err.message)
@@ -32,7 +32,7 @@ export const useRemoveProject = () => {
     return trpc.projects.remove.useMutation({
         onSuccess: async (data) => {
             toast.success(`Delete Project "${data.name}"`)
-            await utils.projects.getMine.invalidate()
+            await utils.projects.filterProjects.invalidate()
         },
         onError: (err) => {
             if (err.data?.code === "FORBIDDEN") {
@@ -50,7 +50,7 @@ export const useUpdateProject = () => {
     return trpc.projects.update.useMutation({
         onSuccess: async (data) => {
             toast.success(`Update Project "${data.name}"`)
-            await utils.projects.getMine.invalidate()
+            await utils.projects.filterProjects.invalidate()
         },
         onError: (err) => {
             if (err.data?.code === "FORBIDDEN") {
@@ -101,7 +101,7 @@ export const useApproveJoinRequest = () => {
     return trpc.projects.approveJoin.useMutation({
         onSuccess: async () => {
             toast.success("Request approved")
-            await utils.projects.getMine.invalidate()
+            await utils.projects.filterProjects.invalidate()
             await utils.projects.getPublic.invalidate()
             await utils.projects.getJoinRequests.invalidate()
         },

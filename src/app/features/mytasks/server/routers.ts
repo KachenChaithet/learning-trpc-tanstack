@@ -2,6 +2,7 @@ import { TaskStatus } from "@/generated/prisma/enums";
 import { prisma } from "@/lib/db";
 import { createTRPCRouter, protectedProcedure } from "@/trpc/init";
 import { TRPCError } from "@trpc/server";
+import { pl } from "date-fns/locale";
 import { ReceiptRussianRuble } from "lucide-react";
 import z from "zod";
 
@@ -287,7 +288,43 @@ export const TaskRouter = createTRPCRouter({
                     }
                 }
             })
+        }),
+    myUpcomingTasks: protectedProcedure
+        .query(async ({ ctx }) => {
+            const now = new Date()
+
+            const tasks = await prisma.task.findMany({
+                where: {
+                    assigneeId: ctx.user.id,
+                    dueDate: {
+                        gte: now
+                    },
+                    status: {
+                        not: 'DONE'
+                    },
+                },
+                include: {
+                    project: {
+                        select: {
+                            name: true
+                        }
+                    }
+                },
+                orderBy: {
+                    dueDate: 'asc'
+                },
+                take: 5
+            })
+
+            return tasks.map((p) => ({
+                id: p.id,
+                projectName: p.project.name,
+                projectId: p.projectId,
+                taskTitle: p.title,
+                dueDate: p.dueDate
+            }))
         })
+
     // remove: protectedProcedure
     //     .input(z.object({ id: z.string() }))
     //     .mutation(({ ctx, input }) => {
