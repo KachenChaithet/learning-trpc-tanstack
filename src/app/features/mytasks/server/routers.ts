@@ -165,7 +165,8 @@ export const TaskRouter = createTRPCRouter({
                     }),
 
                     ...(input.view === 'assignedByMe' && {
-                        createdById: ctx.user.id
+                        createdById: ctx.user.id,
+
                     }),
 
                     ...(input?.projectId &&
@@ -220,6 +221,11 @@ export const TaskRouter = createTRPCRouter({
                             name: true,
                         },
                     },
+                    assignee: {
+                        select: {
+                            name: true
+                        }
+                    }
                 },
             })
         }),

@@ -142,8 +142,6 @@ export const ActivityList = ({ activities, fetchNextPage, hasNextPage, isFetchin
         return <div>Loading...</div>
     }
 
-    console.log(activities);
-    console.log(hasNextPage);
 
 
     const formatName = (fullName?: string) => {
