@@ -288,7 +288,7 @@ export const DashboardHeader = () => {
         {
             title: "Tasks Due Today",
             value: data?.tasksDueToday ?? 0,
-            description: `Next due in ${data?.nextDueInHours ?? 'not have'} hours`,
+            description: data?.nextDueInHours ? `Next due in ${data?.nextDueInHours ?? 'not have'} hours` : 'No upcoming tasks',
             icon: CalendarIcon,
             iconBg: "bg-amber-100",
             iconColor: "text-amber-600",

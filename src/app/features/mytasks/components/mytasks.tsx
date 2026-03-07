@@ -247,6 +247,7 @@ export const MyTasksTable = ({
                     <TableRow>
                         <TableHead>No.</TableHead>
                         <TableHead>Task Name</TableHead>
+                        {tasks.length > 0 && <TableHead>Task To</TableHead>}
                         <TableHead>Project</TableHead>
                         <TableHead>Priority</TableHead>
                         <TableHead>Due Date</TableHead>
@@ -266,6 +267,7 @@ export const MyTasksTable = ({
                             <TableRow key={task.id}>
                                 <TableCell>{index + 1}</TableCell>
                                 <TableCell className="font-semibold">{task.title}</TableCell>
+                                <TableCell className="font-semibold">{task.assignee?.name}</TableCell>
                                 <TableCell>{task.project?.name}</TableCell>
                                 <TableCell className={`flex items-center gap-3`}>
                                     <span
