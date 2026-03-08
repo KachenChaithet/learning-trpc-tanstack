@@ -2,7 +2,7 @@ import { TaskStatus } from "@/generated/prisma/enums";
 import { prisma } from "@/lib/db";
 import { createTRPCRouter, protectedProcedure } from "@/trpc/init";
 import { TRPCError } from "@trpc/server";
-import { pl } from "date-fns/locale";
+import { id, pl } from "date-fns/locale";
 import { ReceiptRussianRuble } from "lucide-react";
 import z from "zod";
 
@@ -329,6 +329,151 @@ export const TaskRouter = createTRPCRouter({
                 taskTitle: p.title,
                 dueDate: p.dueDate
             }))
+        }),
+    getDetailTask: protectedProcedure
+        .input(z.object({
+            taskId: z.string()
+        }))
+        .query(async ({ ctx, input }) => {
+
+            const baseTask = await prisma.task.findUnique({
+                where: { id: input.taskId },
+                select: { projectId: true }
+            })
+
+            if (!baseTask) return null
+
+            const task = await prisma.task.findUnique({
+                where: { id: input.taskId },
+                include: {
+                    project: {
+                        select: {
+                            id: true,
+                            name: true
+                        }
+                    },
+                    createdBy: {
+                        select: {
+                            id: true,
+                            image: true,
+                            name: true,
+                            projectMembers: {
+                                select: {
+                                    id: true,
+                                    role: true
+                                }
+                            }
+                        }
+                    },
+                    activityLogs: {
+                        orderBy: { createdAt: 'desc' },
+                        select: {
+                            actor: {
+                                select: {
+                                    id: true,
+                                    image: true,
+                                    name: true
+                                }
+                            },
+                            id: true,
+                            type: true,
+                            createdAt: true,
+                            task: true,
+                            project: true,
+                            metadata: true
+
+                        }
+                    },
+                    comments: {
+                        orderBy: {
+                            createdAt: "asc"
+                        },
+                        select: {
+                            id: true,
+                            author: true,
+                            createdAt: true,
+                        }
+                    }
+                },
+
+            })
+
+            if (!task) return null
+
+            const activities = task.activityLogs.map((a) => {
+                switch (a.type) {
+                    case "TASK_CREATED":
+                        return {
+                            id: a.id,
+                            name: a.actor?.name ?? "Unknown User",
+                            action: "created task",
+                            target: a.task?.title,
+                            createdAt: a.createdAt,
+                            category: a.type,
+                            isSystem: !a.actor,
+                            dateKey: a.createdAt.toISOString().split("T")[0],
+                        }
+
+                    case "TASK_STATUS_CHANGED":
+                        return {
+                            id: a.id,
+                            name: a.actor?.name ?? "Unknown User",
+                            action: "changed status of",
+                            target: a.task?.title,
+                            createdAt: a.createdAt,
+                            category: a.type,
+                            isSystem: !a.actor,
+                            dateKey: a.createdAt.toISOString().split("T")[0],
+                        }
+                    case "TASK_ASSIGNED": {
+                        const meta = a.metadata as {
+                            assigneeId?: string
+                            assigneeName?: string
+                        } | null
+                        return {
+                            id: a.id,
+                            name: a.actor?.name ?? "Unknown User",
+                            action: meta?.assigneeName
+                                ? `assigned task to ${meta.assigneeName}`
+                                : 'assigned task',
+                            target: a.task?.title,
+                            createdAt: a.createdAt,
+                            category: a.type,
+                            isSystem: !a.actor,
+                            dateKey: a.createdAt.toISOString().split("T")[0],
+                        }
+                    }
+                    case "PROJECT_CREATED": {
+                        return {
+                            id: a.id,
+                            name: a.actor?.name ?? "Unknown User",
+                            action: "created project",
+                            target: a.project?.name,
+                            createdAt: a.createdAt,
+                            category: a.type,
+                            isSystem: !a.actor,
+                            dateKey: a.createdAt.toISOString().split("T")[0],
+                        }
+                    }
+
+
+                    default:
+                        return {
+                            id: a.id,
+                            name: a.actor?.name ?? "Unknown User",
+                            action: "did something",
+                            createdAt: a.createdAt,
+                            category: a.type,
+                            isSystem: !a.actor,
+                            dateKey: a.createdAt.toISOString().split("T")[0],
+                        }
+                }
+            })
+
+            return {
+                ...task,
+                activityLogs: activities
+            }
         })
 
     // remove: protectedProcedure

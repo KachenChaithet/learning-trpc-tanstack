@@ -13,6 +13,7 @@ import DialogTask, { Formtype } from "./dialog"
 import { useAccessibleProjects, useCreateTask, useMyProjects, useSuspenseTasks, useUpdateStatus } from "../hooks/use-tasks"
 import { TaskStatus } from "@/generated/prisma/enums"
 import { task } from "better-auth/react"
+import Link from "next/link"
 
 
 export const MytasksHeader = () => {
@@ -266,7 +267,11 @@ export const MyTasksTable = ({
                         tasks.map((task, index) => (
                             <TableRow key={task.id}>
                                 <TableCell>{index + 1}</TableCell>
-                                <TableCell className="font-semibold">{task.title}</TableCell>
+                                <TableCell className="font-semibold">
+                                    <Link href={`/my-tasks/${task.id}`} className="hover:underline">
+                                        {task.title}
+                                    </Link>
+                                </TableCell>
                                 <TableCell className="font-semibold">{task.assignee?.name}</TableCell>
                                 <TableCell>{task.project?.name}</TableCell>
                                 <TableCell className={`flex items-center gap-3`}>
