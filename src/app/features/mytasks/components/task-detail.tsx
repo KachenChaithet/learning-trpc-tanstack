@@ -1,87 +1,118 @@
+"use client"
+
 import { EntityContainer } from "@/app/components/entity-components"
-import { Avatar, AvatarFallback } from "@/components/ui/avatar"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Card } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
-import { Calendar1, Pencil, Send, SendHorizonal } from "lucide-react"
+import { trpc } from "@/trpc/client"
+import { AppRouter } from "@/trpc/routers/_app"
+import { inferRouterOutputs } from "@trpc/server"
+import { formatDistanceToNow } from "date-fns"
+import { BookCopy, Calendar1, MessageSquare, Pencil, Send, SendHorizonal, Share2, X } from "lucide-react"
+import Image from "next/image"
+import Link from "next/link"
 
-
-export const TaskDetailHeader = () => {
+type RouterOutputs = inferRouterOutputs<AppRouter>
+type Task = RouterOutputs["tasks"]["getDetailTask"]
+type TaskDetailHeaderProps = {
+    task: Task
+}
+export const TaskDetailHeader = ({ task }: TaskDetailHeaderProps) => {
     return (
-        <div className="w-full ">
+        <div className="w-full flex justify-between items-center">
             <div className="flex items-center justify-between">
                 <div>
-                    <h1 className="text-2xl font-semibold">Task Name</h1>
+                    <h1 className="text-2xl font-semibold">{task?.title}</h1>
                     <p className="text-sm text-muted-foreground">
-                        project Name
+                        {task?.project.name} • Task ID: {task?.id}
                     </p>
                 </div>
 
             </div>
+            <Button className="cursor-pointer" variant={'ghost'} asChild>
+                <Link href={'/my-tasks'} >
+                    <X className="text-muted-foreground" />
+                </Link>
+            </Button>
         </div>
     )
 }
 
-export const TaskDetailsSection = () => {
+export const TaskDetailsSection = ({ task }: { task: Task }) => {
+
+    const formattedDueDate = task?.dueDate
+        ? new Date(task.dueDate).toLocaleDateString("en-US", {
+            month: "long",
+            day: "numeric",
+            year: "numeric",
+        })
+        : "No due date"
     return (
-        <div className="space-y-4">
+        <div className="min-h-full flex flex-col gap-4 ">
 
             <div className="space-y-4">
                 <h1 className="font-semibold text-primary text-lg tracking-wide uppercase">Description</h1>
-                <p>Review and finalize the quarterly budget report for Q3.
-                    Ensure all departments have submitted their final spending tallies
-                    and reconcile any discrepancies found in the July audit.</p>
-                <ul className="list-disc pl-5" >
-                    <li>Verify IT infrastructure expenditure</li>
-                    <li>Sync with HR on hiring bonuses</li>
-                    <li>Prepare visualization charts for the executive meeting</li>
-                </ul>
+                <p>{task?.description}</p>
+
             </div>
 
             <div className="flex justify-between gap-4">
                 <div className="">
-                    <label className="font-semibold text-primary text-lg tracking-wide uppercase">Assignee</label>
+                    <label className="font-semibold text-primary text-lg tracking-wide uppercase">Reporter</label>
                     <div className="flex items-center gap-4">
                         <Avatar>
-                            <AvatarFallback>ka</AvatarFallback>
+                            <AvatarImage src={task?.createdBy?.image ?? ''} />
+                            <AvatarFallback>
+                                {task?.createdBy?.name?.[0]?.toUpperCase() ?? "?"}
+                            </AvatarFallback>
                         </Avatar>
                         <div className="">
-                            <h1 className="font-semibold text-sm">Kachen chiyathet</h1>
-                            <p className="text-muted-foreground text-xs">Owner</p>
+                            <h1 className="font-semibold text-sm">{task?.createdBy?.name}</h1>
+                            <p className="text-muted-foreground text-xs">{task?.createdBy?.projectMembers[0].role}</p>
                         </div>
                     </div>
                 </div>
+
                 <div className="">
                     <label className="font-semibold text-primary text-lg uppercase">Due Date</label>
                     <div className="flex items-center gap-2  text-sm text-muted-foreground">
                         <Calendar1 className="h-4 w-4 text-primary" />
-                        {new Date().toLocaleDateString("en-US", {
-                            month: "long",
-                            day: "numeric",
-                            year: "numeric"
-                        })}
+                        {formattedDueDate}
                     </div>
                 </div>
             </div>
 
             <div className="space-y-4">
                 <h1 className="font-semibold text-primary text-lg tracking-wide uppercase">Activity Log</h1>
-                <div className="flex items-start gap-3">
-                    <div className="h-8 w-8 rounded-full bg-muted flex items-center justify-center">
-                        <Pencil className="h-4 w-4" />
-                    </div>
 
-                    <div className="text-sm">
-                        <p>
-                            <span className="font-medium">Kachen B.</span>{" "}
-                            changed status to{" "}
-                            <span className="text-primary">In Progress</span>
-                        </p>
-                        <p className="text-xs text-muted-foreground">2 hours ago</p>
-                    </div>
+                <div className=" max-h-70 overflow-auto  space-y-6">
+                    {task?.activityLogs.map((a) => {
+                        const name = a.name?.split(" ").map((n, i) => (i === 0 ? n : `${n[0]}.`)).join(" ")
+                        return (
+                            <div className="flex items-start gap-3 ">
+                                <div className="h-8 w-8 rounded-full bg-muted flex items-center justify-center">
+                                    <Pencil className="h-4 w-4" />
+                                </div>
+
+
+                                <div className="text-sm">
+                                    <p>
+                                        <span className="font-medium">{name}</span>{" "}
+                                        {a.action}{" "}
+                                        <span className="text-primary">{a.target}</span>
+                                    </p>
+                                    <p className="text-xs text-muted-foreground">
+                                        {formatDistanceToNow(new Date(a.createdAt), { addSuffix: true })}
+                                    </p>
+                                </div>
+                            </div>
+
+                        )
+                    })}
+
                 </div>
+
             </div>
 
         </div >
@@ -102,6 +133,20 @@ const CommnetInput = () => {
     )
 }
 
+const CommentEmptyState = () => {
+    return (
+        <div className=" w-full h-full flex flex-col text-center  justify-center items-center gap-4">
+            <span className="bg-background  p-8 rounded-full">
+                <MessageSquare className="text-muted-foreground size-10" />
+            </span>
+            <div className="space-y-2">
+                <h1 className="font-semibold text-lg text-primary">No comments yet</h1>
+                <p className="text-xs text-muted-foreground">Be the first start to conversation!</p>
+            </div>
+        </div>
+    )
+}
+
 const CommentItem = () => {
     return (
         <>
@@ -110,6 +155,7 @@ const CommentItem = () => {
                     <AvatarFallback className="bg-white">hi</AvatarFallback>
                 </Avatar>
                 <div className="">
+
 
                     <div className="flex-1 rounded-2xl rounded-tl-none  max-w-140  bg-white p-4 text-sm">
                         <h1>text message text message text message text message text message text message </h1>
@@ -122,17 +168,21 @@ const CommentItem = () => {
     )
 }
 
-export const TaskDetailComments = () => {
+export const TaskDetailComments = ({ task }: { task: Task }) => {
+    const comments = task?.comments ?? []
     return (
-        <div className="space-y-4 min-h-140">
+        <div className="space-y-4 flex flex-col h-140 ">
             <header className="flex justify-between">
                 <h1 className="font-semibold text-primary text-lg tracking-wide uppercase">COLLABORATION</h1>
                 <Badge>3 comment</Badge>
             </header>
-            <main className="max-h-150 overflow-auto">
-                <CommentItem />
-                <CommentItem />
+            <main className="flex-1 max-h-130 overflow-auto ">
+                {comments.length > 0
+                    ? <CommentItem />
+                    : <CommentEmptyState />
+                }
             </main>
+
 
         </div>
 
@@ -141,27 +191,53 @@ export const TaskDetailComments = () => {
 
 
 
-export const TaskDetailContainer = ({ children }: { children: React.ReactNode }) => {
+export const TaskDetailContainer = ({ children, taskId }: { children: React.ReactNode, taskId: string }) => {
+    const { data } = trpc.tasks.getDetailTask.useQuery({ taskId })
+    console.log(data);
+
+    if (!data) {
+        return <div className="p-10">Loading...</div>
+    }
     return (
         <EntityContainer
-            header={<TaskDetailHeader />}
-
+            header={<TaskDetailHeader task={data} />}
         >
             <div className="flex flex-col md:flex-row border-t -ml-10 ">
-                <div className="flex-1 pr-10 pt-10 pl-10">
-                    <TaskDetailsSection />
+                <div className="flex-1 pr-10 pt-10 pl-10 ">
+                    <TaskDetailsSection task={data} />
                 </div>
 
                 <div className="flex-1 border-l border-border bg-muted flex flex-col -mr-10">
                     <div className="pl-10 pr-10 pt-10 ">
-                        <TaskDetailComments />
+                        <TaskDetailComments task={data} />
                     </div>
 
                     <CommnetInput />
                 </div>
             </div>
 
-            <div className="bg-muted h-full -mx-10 -mt-4"></div>
+            <div className="bg-muted h-full -mx-10 -mt-4 -mb-6 flex items-center justify-between px-10">
+                <div className="space-x-8">
+                    <Button className="" variant={'ghost'}>
+                        <Share2 />
+                        Share Task
+                    </Button>
+                    <Button className="" variant={'ghost'}>
+                        <BookCopy />
+                        Duplicate
+                    </Button>
+                </div>
+                <div className="">
+                    <div className="space-x-8">
+                        <Button className="" variant={'ghost'}>
+                            Archive
+                        </Button>
+                        <Button className="" >
+                            Complete Task
+                        </Button>
+                    </div>
+                </div>
+            </div>
         </EntityContainer>
     )
 }

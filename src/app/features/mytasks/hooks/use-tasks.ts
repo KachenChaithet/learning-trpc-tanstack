@@ -59,6 +59,7 @@ export const useUpdateStatus = () => {
             utils.projects.getMine.invalidate()
             utils.tasks.myUpcomingTasks.invalidate()
             utils.dashboard.getOverview.invalidate()
+            utils.activity.list.invalidate()
         },
         onError: (err) => {
             if (err.data?.code === "FORBIDDEN") {
