@@ -44,7 +44,7 @@ The system supports task workflows, comments, filtering, and project-based colla
 ## Dashboard
 
 <p align="center">
-  <img src="public/images/dashboard.jpg" width="850">
+  <img src="public/images/dashboard.png" width="850">
 </p>
 
 <!-- Add more screenshots if you have them -->
