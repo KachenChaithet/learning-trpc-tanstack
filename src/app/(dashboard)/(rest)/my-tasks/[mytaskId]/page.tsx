@@ -7,6 +7,8 @@ type PageProps = {
 }
 const page = async ({ params }: PageProps) => {
     const { mytaskId } = await params
+
+ 
     return (
         <TaskDetailContainer taskId={mytaskId}>
             <h1>{mytaskId}</h1>

@@ -452,7 +452,7 @@ export const ProjectContainer = ({ children }: ProjectContainerProps) => {
             <div className="grid md:grid-cols-4 grid-cols-1 gap-4">
                 {
                     isProjects ? (
-                        <p>Loading...</p>
+                        <Spinner className="size-8 text-muted-foreground"/>
                     ) : (
                         <ProjectList projects={projects} />
                     )

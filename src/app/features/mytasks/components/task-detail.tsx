@@ -1,6 +1,7 @@
 "use client"
 
 import { EntityContainer } from "@/app/components/entity-components"
+import NotFound from "@/app/features/mytasks/components/not-found"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -14,7 +15,10 @@ import { formatDistanceToNow } from "date-fns"
 import { BookCopy, Calendar1, FolderClosed, MessageSquare, Pencil, Send, SendHorizonal, Share2, X } from "lucide-react"
 import Image from "next/image"
 import Link from "next/link"
+import { notFound } from "next/navigation"
 import { useEffect, useRef, useState } from "react"
+import { toast } from "sonner"
+import { useUpdateArchive, useUpdateStatus } from "../hooks/use-tasks"
 
 type RouterOutputs = inferRouterOutputs<AppRouter>
 type Task = RouterOutputs["tasks"]["getDetailTask"]
@@ -230,11 +234,17 @@ export const TaskDetailComments = ({ comments }: { comments: Comments[] }) => {
 
 
 export const TaskDetailContainer = ({ children, taskId }: { children: React.ReactNode, taskId: string }) => {
-    const { data } = trpc.tasks.getDetailTask.useQuery({ taskId })
+
+    const { data, isLoading } = trpc.tasks.getDetailTask.useQuery({ taskId })
     const [form, setForm] = useState({
         message: ''
     })
+
+    const { mutate: updateStatus } = useUpdateStatus()
+    const { mutate: updateArchive } = useUpdateArchive()
+
     const utils = trpc.useUtils()
+
     const { mutate: createComment } = trpc.tasks.createComment.useMutation({
         onSuccess: (comment) => {
             socket.emit("send-comment", comment)
@@ -263,13 +273,19 @@ export const TaskDetailContainer = ({ children, taskId }: { children: React.Reac
 
     }, [taskId, utils])
 
-    if (!data) {
-        return <div className="p-10">Loading...</div>
-    }
+
 
     const handleSubmitComment = () => {
         createComment({ message: form.message, taskId })
         setForm((prev) => ({ ...prev, message: '' }))
+    }
+
+
+    if (isLoading) {
+        return <div className="p-10">Loading...</div>
+    }
+    if (!data) {
+        return <NotFound />
     }
 
 
@@ -293,7 +309,12 @@ export const TaskDetailContainer = ({ children, taskId }: { children: React.Reac
 
             <div className="bg-muted h-full -mx-10 -mt-4 -mb-6 flex items-center justify-between px-10">
                 <div className="space-x-8">
-                    <Button className="" variant={'ghost'}>
+                    <Button className="" variant={'ghost'}
+                        onClick={async () => {
+                            await navigator.clipboard.writeText(`${window.location.origin}/my-tasks/${taskId}`)
+                            toast.success("copy successfully!")
+                        }}
+                    >
                         <Share2 />
                         Share Task
                     </Button>
@@ -304,15 +325,23 @@ export const TaskDetailContainer = ({ children, taskId }: { children: React.Reac
                 </div>
                 <div className="">
                     <div className="space-x-8">
-                        <Button className="" variant={'ghost'}>
+                        <Button
+                            className=""
+                            variant={'ghost'}
+                            onClick={() => updateArchive({ taskId })}
+                        >
                             Archive
                         </Button>
-                        <Button className="" >
+                        <Button
+                            className=""
+                            disabled={data.status === 'DONE'}
+                            onClick={() => updateStatus({ status: "DONE", taskId })}
+                        >
                             Complete Task
                         </Button>
                     </div>
                 </div>
             </div>
-        </EntityContainer>
+        </EntityContainer >
     )
 }

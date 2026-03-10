@@ -1,6 +1,7 @@
 import { trpc } from "@/trpc/client"
-import { exitCode } from "process"
+import { useRouter } from "next/navigation"
 import { toast } from "sonner"
+
 
 export const useCreateTask = () => {
     const utils = trpc.useUtils()
@@ -66,6 +67,25 @@ export const useUpdateStatus = () => {
                 toast.error("You don't have permission")
                 return
             }
+            toast.error(err.message)
+        }
+    })
+}
+
+export const useUpdateArchive = () => {
+    const utils = trpc.useUtils()
+    const router = useRouter()
+
+
+    return trpc.tasks.updateArchive.useMutation({
+        onSuccess: (data) => {
+            toast.success(`update ${data.title} to archive`)
+            utils.tasks.getMany.invalidate()
+            router.push('/my-tasks')
+
+
+        },
+        onError: (err) => {
             toast.error(err.message)
         }
     })

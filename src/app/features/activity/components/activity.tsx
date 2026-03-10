@@ -12,6 +12,7 @@ import { ostring } from "zod/v3"
 import { ChevronDown } from "lucide-react"
 import { Card } from "@/components/ui/card"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import Link from "next/link"
 
 
 export const ActivityHeader = () => {
@@ -192,6 +193,7 @@ export const ActivityList = ({ activities, fetchNextPage, hasNextPage, isFetchin
             year: "numeric",
         })
     }
+
     return (
         <div className="space-y-8 text-center">
             {Object.entries(grouped).map(([dateKey, items]) => (
@@ -215,16 +217,18 @@ export const ActivityList = ({ activities, fetchNextPage, hasNextPage, isFetchin
                                     </AvatarFallback>
                                 </Avatar>
 
-                                <div>
+                                <div className="text-xs md:text-[16px]">
                                     <span>
                                         {formatName(activity.name)}{" "}
-                                        {activity.action}{" "}
+                                        {activity.action}
                                     </span>
 
                                     {activity.target && (
-                                        <span className="text-primary hover:underline cursor-pointer">
-                                            {activity.target}
-                                        </span>
+                                        <Button className="text-primary  cursor-pointer text-xs md:text-[16px]" variant={'link'} asChild>
+                                            <Link href={`/my-tasks/${activity.targetId}`}>
+                                                {activity.target}
+                                            </Link>
+                                        </Button>
                                     )}
                                 </div>
                             </div>

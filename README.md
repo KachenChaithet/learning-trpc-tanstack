@@ -1,36 +1,246 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
-## Getting Started
+# Task Management System
 
-First, run the development server:
+A full-stack task management application designed for managing projects, assigning tasks, and collaborating with team members.  
+The system supports task workflows, comments, filtering, and project-based collaboration.
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+----------
+
+# Features
+
+## Task Management
+
+-   Create tasks inside projects
+    
+-   Assign tasks to project members
+    
+-   Update task status (TODO → DONE)
+    
+-   Archive tasks to remove them from active lists
+    
+-   Filter tasks by:
+    
+    -   Today
+        
+    -   This week
+        
+    -   Overdue
+        
+    -   Completed
+        
+
+## Collaboration
+
+-   Comment system for each task
+    
+-   Project member management
+    
+-   View tasks assigned to you or created by you
+    
+
+## Activity & Productivity
+
+-   Task priority levels (Low, Medium, High)
+    
+-   Due date tracking
+    
+-   Activity logs for task actions
+    
+-   Task sorting by date
+    
+
+----------
+
+# Tech Stack
+
+## Frontend
+
+-   Next.js (App Router)
+    
+-   React
+    
+-   Tailwind CSS
+    
+
+## Backend
+
+-   tRPC
+    
+-   Prisma ORM
+    
+
+## Database
+
+-   PostgreSQL
+    
+
+## Other Tools
+
+-   React Query (via tRPC)
+    
+-   Zod for validation
+    
+-   Sonner for notifications
+    
+-   Socket.io (for realtime features)
+    
+
+----------
+
+# Architecture
+
+The project uses a **full-stack TypeScript architecture with tRPC** to ensure type-safe communication between frontend and backend.
+
+```
+Frontend → tRPC API → Prisma ORM → PostgreSQL
+
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+----------
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+# Key Concepts Implemented
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+-   Type-safe APIs using **tRPC**
+    
+-   Database schema design with **Prisma**
+    
+-   Server-side filtering and querying
+    
+-   Cache invalidation using **React Query**
+    
+-   Custom React hooks for API calls
+    
+-   Modular feature-based architecture
+    
 
-## Learn More
+----------
 
-To learn more about Next.js, take a look at the following resources:
+# Getting Started
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## 1. Clone the repository
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+```
+git clone https://github.com/yourusername/task-management-system.git
 
-## Deploy on Vercel
+```
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## 2. Install dependencies
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+```
+npm install
+
+```
+
+## 3. Setup environment variables
+
+Create a `.env` file in the root of the project and add the following variables.
+
+```
+DATABASE_URL=""
+
+BETTER_AUTH_SECRET=""
+BETTER_AUTH_URL=""
+
+GITHUB_CLIENT_ID=""
+GITHUB_CLIENT_SECRET=""
+
+GOOGLE_CLIENT_ID=""
+GOOGLE_CLIENT_SECRET=""
+
+```
+
+----------
+
+# Environment Variables
+
+Variable
+
+Description
+
+DATABASE_URL
+
+PostgreSQL database connection string used by Prisma
+
+BETTER_AUTH_SECRET
+
+Secret key used for authentication
+
+BETTER_AUTH_URL
+
+Base URL of the authentication server
+
+GITHUB_CLIENT_ID
+
+GitHub OAuth client ID
+
+GITHUB_CLIENT_SECRET
+
+GitHub OAuth client secret
+
+GOOGLE_CLIENT_ID
+
+Google OAuth client ID
+
+GOOGLE_CLIENT_SECRET
+
+Google OAuth client secret
+
+----------
+
+# Example `.env`
+
+```
+DATABASE_URL="postgresql://user:password@localhost:5432/taskdb"
+
+BETTER_AUTH_SECRET="your-secret-key"
+BETTER_AUTH_URL="http://localhost:3000"
+
+GITHUB_CLIENT_ID="xxxx"
+GITHUB_CLIENT_SECRET="xxxx"
+
+GOOGLE_CLIENT_ID="xxxx"
+GOOGLE_CLIENT_SECRET="xxxx"
+
+```
+
+----------
+
+## 4. Run database migrations
+
+```
+npx prisma migrate dev
+
+```
+
+## 5. Start the development server
+
+```
+npm run dev
+
+```
+
+Open:
+
+```
+http://localhost:3000
+
+```
+
+----------
+
+# Future Improvements
+
+-   Realtime comments using WebSockets
+    
+-   Role-based permissions (Admin / Member)
+    
+-   Task editing and attachments
+    
+-   Notifications system
+    
+
+----------
+
+# Author
+
+**Kachen Chaithet**

@@ -160,6 +160,7 @@ export const TaskRouter = createTRPCRouter({
 
             return prisma.task.findMany({
                 where: {
+                    archived: false,
                     ...(input.view === 'assignedToMe' && {
                         assigneeId: ctx.user.id
                     }),
@@ -516,6 +517,18 @@ export const TaskRouter = createTRPCRouter({
                 createdAt: comment.createdAt
             }
         }),
+    updateArchive: protectedProcedure
+        .input(z.object({ taskId: z.string() }))
+        .mutation(({ ctx, input }) => {
+            return prisma.task.update({
+                where: {
+                    id: input.taskId
+                },
+                data: {
+                    archived: true
+                }
+            })
+        })
 
     // remove: protectedProcedure
     //     .input(z.object({ id: z.string() }))
