@@ -90,3 +90,19 @@ export const useUpdateArchive = () => {
         }
     })
 }
+
+export const useDuplicateTask = () => {
+    const utils = trpc.useUtils()
+    const router = useRouter()
+
+    return trpc.tasks.duplicateTask.useMutation({
+        onSuccess: (data) => {
+            toast.success(`duplicate ${data.title} copy`)
+            utils.tasks.getMany.invalidate()
+            router.push(`/my-tasks/${data.id}`)
+        },
+        onError: (err) => {
+            toast.error(err.message)
+        }
+    })
+}

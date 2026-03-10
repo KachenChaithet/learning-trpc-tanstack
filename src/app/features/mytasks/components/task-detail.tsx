@@ -18,7 +18,7 @@ import Link from "next/link"
 import { notFound } from "next/navigation"
 import { useEffect, useRef, useState } from "react"
 import { toast } from "sonner"
-import { useUpdateArchive, useUpdateStatus } from "../hooks/use-tasks"
+import { useDuplicateTask, useUpdateArchive, useUpdateStatus } from "../hooks/use-tasks"
 
 type RouterOutputs = inferRouterOutputs<AppRouter>
 type Task = RouterOutputs["tasks"]["getDetailTask"]
@@ -241,7 +241,8 @@ export const TaskDetailContainer = ({ children, taskId }: { children: React.Reac
     })
 
     const { mutate: updateStatus } = useUpdateStatus()
-    const { mutate: updateArchive } = useUpdateArchive()
+    const { mutate: updateArchive, isPending: isupdateArchive } = useUpdateArchive()
+    const { mutate: duplicateTask, isPending: isduplicateTask } = useDuplicateTask()
 
     const utils = trpc.useUtils()
 
@@ -318,7 +319,11 @@ export const TaskDetailContainer = ({ children, taskId }: { children: React.Reac
                         <Share2 />
                         Share Task
                     </Button>
-                    <Button className="" variant={'ghost'}>
+                    <Button
+                        variant={'ghost'}
+                        disabled={isduplicateTask}
+                        onClick={() => duplicateTask({ taskId })}
+                    >
                         <BookCopy />
                         Duplicate
                     </Button>
@@ -326,14 +331,13 @@ export const TaskDetailContainer = ({ children, taskId }: { children: React.Reac
                 <div className="">
                     <div className="space-x-8">
                         <Button
-                            className=""
                             variant={'ghost'}
+                            disabled={isupdateArchive}
                             onClick={() => updateArchive({ taskId })}
                         >
                             Archive
                         </Button>
                         <Button
-                            className=""
                             disabled={data.status === 'DONE'}
                             onClick={() => updateStatus({ status: "DONE", taskId })}
                         >

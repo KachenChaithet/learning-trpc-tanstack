@@ -31,6 +31,7 @@ model User {
   projectJoinRequests ProjectJoinRequest[]
   activityLogs        ActivityLog[]
   comments            Comment[]
+  notifications       Notification[]
 
   @@map("user")
 }
@@ -197,6 +198,26 @@ model Comment {
 
   @@index([taskId])
   @@index([authorId])
+}
+
+model Notification {
+  id String @id @default(cuid())
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id])
+
+  type NotificationType
+  link String
+  read Boolean          @default(false)
+
+  createdAt DateTime @default(now())
+}
+
+enum NotificationType {
+  TASK_ASSIGNED
+  TASK_COMMENT
+  TASK_COMPLETED
+  TASK_DUE
 }
 
 model Session {

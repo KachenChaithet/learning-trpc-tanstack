@@ -528,6 +528,46 @@ export const TaskRouter = createTRPCRouter({
                     archived: true
                 }
             })
+        }),
+    duplicateTask: protectedProcedure
+        .input(z.object({ taskId: z.string() }))
+        .mutation(async ({ ctx, input }) => {
+            const task = await prisma.task.findUnique({
+                where: {
+                    id: input.taskId
+                }
+            })
+
+            if (!task) throw new Error('Task not found')
+
+            const baseTitle = task.title.replace(/\s\(copy.*\)$/, "")
+
+            const copies = await prisma.task.count({
+                where: {
+                    title: { startsWith: baseTitle },
+                    projectId: task.projectId
+                }
+            })
+
+            let newTitle = `${baseTitle} (copy)`
+
+            if (copies > 1) {
+                newTitle = `${baseTitle} (copy ${copies})`
+            }
+            const newTask = await prisma.task.create({
+                data: {
+                    title: newTitle,
+                    description: task.description,
+                    status: 'TODO',
+                    priority: task.priority,
+                    projectId: task.projectId,
+                    assigneeId: task.assigneeId,
+                    createdById: task.createdById,
+                    dueDate: task.dueDate
+                }
+            })
+
+            return newTask
         })
 
     // remove: protectedProcedure
