@@ -1,4 +1,4 @@
-import AppHeader from "@/app/components/app-header"
+import AppHeader from "@/app/components/layouts/app-header"
 import { requireAuth } from "@/lib/auth-utils"
 
 const Layout = async ({ children }: { children: React.ReactNode }) => {

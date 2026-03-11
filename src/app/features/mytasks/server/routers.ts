@@ -1,5 +1,6 @@
 import { TaskStatus } from "@/generated/prisma/enums";
 import { prisma } from "@/lib/db";
+import { createNotification } from "@/server/sockets/services/notification-service";
 import { createTRPCRouter, protectedProcedure } from "@/trpc/init";
 import { TRPCError } from "@trpc/server";
 import { id, pl } from "date-fns/locale";
@@ -86,8 +87,17 @@ export const TaskRouter = createTRPCRouter({
                             }
                         }
                     })
-
                 }
+
+                if (input.assigneeId !== ctx.user.id) {
+                    createNotification({
+                        userId: input.assigneeId,
+                        type: 'TASK_ASSIGNED',
+                        link: `/my-tasks/${task.id}`
+                    })
+                }
+
+
 
                 return task
             })
@@ -500,11 +510,10 @@ export const TaskRouter = createTRPCRouter({
                     taskId: input.taskId,
                 },
                 include: {
-                    author: true  // ✅ include author
+                    author: true
                 }
             })
 
-            // ✅ return shape เดียวกับ getTaskComments
             return {
                 id: comment.id,
                 message: comment.content,

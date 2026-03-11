@@ -1,5 +1,5 @@
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar"
-import AppSidebar from "../components/app-sidebar"
+import AppSidebar from "../components/layouts/app-sidebar"
 
 const Layout = ({ children }: { children: React.ReactNode }) => {
     return (
