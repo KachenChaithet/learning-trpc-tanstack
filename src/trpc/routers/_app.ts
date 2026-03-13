@@ -4,7 +4,7 @@ import { ProjectRouter } from '@/app/features/projects/server/routers';
 import { TaskRouter } from '@/app/features/mytasks/server/routers';
 import { DashboardRouter } from '@/app/features/dashboard/server/routers';
 import { activityRouter } from '@/app/features/activity/server/routers';
-import { notificationRouter } from '@/server/router/notification';
+import { notificationRouter } from '@/app/features/notifications/server/routers';
 export const appRouter = createTRPCRouter({
     hello: protectedProcedure
         .query(({ ctx, input }) => {

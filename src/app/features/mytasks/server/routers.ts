@@ -3,6 +3,7 @@ import { prisma } from "@/lib/db";
 import { createNotification } from "@/server/sockets/services/notification-service";
 import { createTRPCRouter, protectedProcedure } from "@/trpc/init";
 import { TRPCError } from "@trpc/server";
+import { task } from "better-auth/react";
 import { id, pl } from "date-fns/locale";
 import { ReceiptRussianRuble } from "lucide-react";
 import z from "zod";
@@ -118,7 +119,7 @@ export const TaskRouter = createTRPCRouter({
                 }
 
                 if (existingTask.status === input.status) {
-                    return
+                    throw new TRPCError({ code: "FORBIDDEN" })
                 }
 
                 const updatedTask = await tx.task.update({
@@ -142,6 +143,31 @@ export const TaskRouter = createTRPCRouter({
                         }
                     }
                 })
+
+
+
+
+                if (input.status === 'DONE') {
+                    const owners = await tx.projectMember.findMany({
+                        where: {
+                            projectId: existingTask.projectId,
+                            role: 'OWNER'
+                        },
+                        select: {
+                            userId: true
+                        }
+                    })
+                    for (const owner of owners) {
+                        if (owner.userId !== ctx.user.id) {
+                            await createNotification({
+                                userId: owner.userId,
+                                link: `/my-tasks/${input.taskId}`,
+                                type: "TASK_COMPLETED"
+                            })
+                        }
+                    }
+                }
+
 
                 return updatedTask
             })
@@ -192,13 +218,21 @@ export const TaskRouter = createTRPCRouter({
 
                     //  Tab Filter
                     ...(input?.tab === "today" && {
-                        dueDate: {
-                            gte: now
-                        },
+                        OR: [
+                            {
+                                dueDate: {
+                                    gte: now
+                                }
+                            },
+                            {
+                                dueDate: null
+                            }
+                        ],
                         status: {
                             not: 'DONE'
                         }
                     }),
+
 
                     ...(input?.tab === "week" && {
                         dueDate: {
@@ -210,6 +244,9 @@ export const TaskRouter = createTRPCRouter({
                     ...(input?.tab === 'overdue' && {
                         dueDate: {
                             lt: now
+                        },
+                        status: {
+                            not: 'DONE'
                         }
                     }),
 
@@ -513,6 +550,24 @@ export const TaskRouter = createTRPCRouter({
                     author: true
                 }
             })
+
+            const task = await prisma.task.findUnique({
+                where: {
+                    id: input.taskId
+                },
+                select: {
+                    assigneeId: true
+                }
+            })
+
+
+            if (task?.assigneeId && task.assigneeId != ctx.user.id) {
+                createNotification({
+                    userId: task?.assigneeId,
+                    link: `/my-tasks/${input.taskId}`,
+                    type: 'TASK_COMMENT'
+                })
+            }
 
             return {
                 id: comment.id,
