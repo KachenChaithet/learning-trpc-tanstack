@@ -10,6 +10,7 @@ import { useEffect } from "react"
 import { socket } from "@/lib/socket"
 import { authClient } from "@/lib/auth-client"
 import { registerPush } from "@/app/features/notifications/hooks/use-push"
+import { NotificationPermissionButton } from "@/app/features/notifications/components/notification-permission-button"
 
 export const AppHeaderContainer = () => {
 
@@ -38,22 +39,21 @@ export const AppHeaderContainer = () => {
 
     }, [userId, utils])
     const unreadCount = data.filter(n => !n.read).length ?? 0
-    useEffect(() => {
+    const subscribeMutation = trpc.notification.subscribe.useMutation()
 
+    useEffect(() => {
         if ("serviceWorker" in navigator) {
             navigator.serviceWorker.register("/sw.js")
         }
-
         if (Notification.permission === "default") {
             Notification.requestPermission().then((permission) => {
                 if (permission === "granted") {
-                    registerPush()
+                    registerPush(subscribeMutation.mutateAsync)
                 }
             })
         } else if (Notification.permission === "granted") {
-            registerPush()
+            registerPush(subscribeMutation.mutateAsync)
         }
-
     }, [])
     return (
         <div className="flex items-center gap-4">
@@ -70,6 +70,7 @@ export const AppHeaderContainer = () => {
                 </PopoverTrigger>
                 <NotificationDropdown data={data} isLoading={isLoading} />
             </Popover>
+            <NotificationPermissionButton />
             <Image src={'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQanlasPgQjfGGU6anray6qKVVH-ZlTqmuTHw&s'} alt="image profile" width={32} height={32} />
         </div>
     )

@@ -7,6 +7,7 @@ import z, { string } from "zod";
 import { owners } from "../components/projects";
 import { JoinRequestStatus } from "@/generated/prisma/enums";
 import { Prisma } from "@/generated/prisma/client";
+import { createNotification } from "@/server/sockets/services/notification-service";
 
 export const ProjectRouter = createTRPCRouter({
     create: protectedProcedure
@@ -243,7 +244,8 @@ export const ProjectRouter = createTRPCRouter({
                 })
             }
 
-            return prisma.projectJoinRequest.create({
+
+            const request = await prisma.projectJoinRequest.create({
                 data: {
                     projectId: input.projectId,
                     userId: ctx.user.id
@@ -256,6 +258,29 @@ export const ProjectRouter = createTRPCRouter({
                     }
                 }
             })
+
+            const owners = await prisma.projectMember.findMany({
+                where: {
+                    projectId: input.projectId,
+                    role: 'OWNER'
+                },
+                select: {
+                    userId: true
+                }
+            })
+
+            for (const owner of owners) {
+                if (owner.userId !== ctx.user.id) {
+                    await createNotification({
+                        userId: owner.userId,
+                        link: "/projects",
+                        type: 'PROJECT_JOIN_REQUEST'
+                    })
+                }
+            }
+
+
+            return request
         }),
     cancelJoin: protectedProcedure.input(z.object({ projectId: z.string() }))
         .mutation(async ({ ctx, input }) => {
@@ -311,6 +336,13 @@ export const ProjectRouter = createTRPCRouter({
                     }
                 })
             ])
+            if (request.userId && request.userId !== ctx.user.id) {
+                await createNotification({
+                    userId: request.userId,
+                    link: "/projects",
+                    type: 'PROJECT_JOIN_APPROVED'
+                })
+            }
 
             return { success: true }
 

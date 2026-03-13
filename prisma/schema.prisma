@@ -106,7 +106,8 @@ model Task {
   createdById String
   createdBy   User   @relation("UserCreatedTasks", fields: [createdById], references: [id])
 
-  dueDate DateTime?
+  dueDate    DateTime?
+  notifiedAt DateTime?
 
   createdAt    DateTime      @default(now())
   updatedAt    DateTime      @updatedAt
@@ -219,6 +220,10 @@ enum NotificationType {
   TASK_COMMENT
   TASK_COMPLETED
   TASK_DUE
+
+  PROJECT_JOIN_REQUEST
+  PROJECT_JOIN_APPROVED
+  PROJECT_MEMBER_ADDED
 }
 
 model PushSubscription {
