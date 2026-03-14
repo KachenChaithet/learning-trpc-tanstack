@@ -32,6 +32,7 @@ type TaskFilter = {
 export const useSuspenseTasks = (filter?: TaskFilter) => {
     return trpc.tasks.getMany.useSuspenseQuery({ view: filter?.view ?? 'assignedToMe', ...filter })
 }
+export type TaskItem = ReturnType<typeof useSuspenseTasks>[0][number]
 
 export const useProjectMembers = (projectId?: string) => {
     return trpc.tasks.getMembers.useQuery(

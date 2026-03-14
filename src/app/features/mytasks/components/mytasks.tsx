@@ -6,7 +6,7 @@ import { Card } from "@/components/ui/card"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Table, TableBody, TableCaption, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { PlusIcon } from "lucide-react"
+import { LayoutGrid, List, PlusIcon } from "lucide-react"
 import { useState } from "react"
 import { Pagination, PaginationContent, PaginationEllipsis, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from "@/components/ui/pagination"
 import DialogTask, { Formtype } from "./dialog"
@@ -14,6 +14,8 @@ import { useAccessibleProjects, useCreateTask, useMyProjects, useSuspenseTasks, 
 import { TaskStatus } from "@/generated/prisma/enums"
 import { task } from "better-auth/react"
 import Link from "next/link"
+import { KanbanBoard } from "./kanban/kanban-board"
+import { type TaskItem } from "../hooks/use-tasks"
 
 
 export const MytasksHeader = () => {
@@ -222,22 +224,14 @@ const PRIORITY_COLOR: Record<string, string> = {
 }
 
 type TableProps = {
-    priority?: Priority
-    date?: SortOrder
-    projectId?: string
-    tab?: TaskTab
+    tasks: TaskItem[]
     view: "assignedToMe" | "assignedByMe"
 }
-
 export const MyTasksTable = ({
-    date,
-    priority,
-    projectId,
-    tab,
-    view,
+    tasks,
+    view
 }: TableProps) => {
 
-    const [tasks] = useSuspenseTasks({ priority, projectId, date, tab, view })
 
     const { mutate: updateStatus } = useUpdateStatus()
 
@@ -320,24 +314,47 @@ export const MyTasksTable = ({
 
 export const MytasksContainer = () => {
     type TaskView = "assignedToMe" | "assignedByMe"
+    type DisplayView = "table" | "kanban"
 
     const [view, setView] = useState<TaskView>("assignedToMe")
+    const [displayView, setDisplayView] = useState<DisplayView>('table')
 
     const [priority, setPriority] = useState<Priority | undefined>()
     const [projectId, setProjectId] = useState<string | undefined>()
     const [date, setDate] = useState<SortOrder | undefined>()
     const [activeTab, setActiveTab] = useState<TaskTab>("today")
+    const [tasks] = useSuspenseTasks({ priority, projectId, date, tab: activeTab, view })
 
     return (
         <>
 
             <EntityContainer header={<MytasksHeader />}>
-                <Tabs value={view} onValueChange={(v) => setView(v as TaskView)}>
-                    <TabsList>
-                        <TabsTrigger value="assignedToMe">Assigned to Me</TabsTrigger>
-                        <TabsTrigger value="assignedByMe">Assigned by Me</TabsTrigger>
-                    </TabsList>
-                </Tabs>
+                <div className="flex items-center justify-between">
+                    <Tabs value={view} onValueChange={(v) => setView(v as TaskView)}>
+                        <TabsList>
+                            <TabsTrigger value="assignedToMe">Assigned to Me</TabsTrigger>
+                            <TabsTrigger value="assignedByMe">Assigned by Me</TabsTrigger>
+                        </TabsList>
+                    </Tabs>
+
+                    {/* toggle table/kanban */}
+                    <div className="flex items-center border rounded-md">
+                        <Button
+                            variant={displayView === "table" ? "secondary" : "ghost"}
+                            size="icon"
+                            onClick={() => setDisplayView("table")}
+                        >
+                            <List className="size-4" />
+                        </Button>
+                        <Button
+                            variant={displayView === "kanban" ? "secondary" : "ghost"}
+                            size="icon"
+                            onClick={() => setDisplayView("kanban")}
+                        >
+                            <LayoutGrid className="size-4" />
+                        </Button>
+                    </div>
+                </div>
 
                 <TaskTabs onChange={setActiveTab} value={activeTab} />
 
@@ -350,14 +367,15 @@ export const MytasksContainer = () => {
                     setProjectId={setProjectId}
                 />
 
-                <MyTasksTable
-                    view={view}
-                    date={date}
-                    priority={priority}
-                    projectId={projectId}
-                    tab={activeTab}
-                />
-
+                {/* แสดง table หรือ kanban ตาม displayView */}
+                {displayView === "table" ? (
+                    <MyTasksTable
+                        view={view}
+                        tasks={tasks}
+                    />
+                ) : (
+                    <KanbanBoard tasks={tasks} /> // ← ต้องดึง tasks มาจาก hook ก่อน
+                )}
             </EntityContainer>
         </>
     )
