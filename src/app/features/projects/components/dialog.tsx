@@ -11,11 +11,13 @@ import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { ArchiveIcon, FileClock, PlusIcon, UserPlus, UserPlusIcon } from "lucide-react"
 import type { LucideIcon } from "lucide-react"
-import { useEffect, useState } from "react"
+import { Suspense, useEffect, useState } from "react"
 import { useForm } from "react-hook-form"
 import z from "zod"
-import { useApproveJoinRequest, useRejectJoinRequest, useRequestCancelJoinProject, useRequestJoinProject, useSuspenseProjectJoinRequests, useSuspenseProjectsPublic } from "../hooks/use-projects"
+import { useAcceptInvite, useApproveJoinRequest, useDeclineInvite, useMyInvites, useRejectJoinRequest, useRequestCancelJoinProject, useRequestJoinProject, useSuspenseProjectJoinRequests, useSuspenseProjectsPublic } from "../hooks/use-projects"
 import Image from "next/image"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Spinner } from "@/components/ui/spinner"
 
 const formSchema = z.object({
     name: z.string()
@@ -345,6 +347,55 @@ const ProjectCardRequest = ({ ImageProfile, userName, projectName, RequestId }: 
 }
 
 
+const InviteCard = ({ id, projectName, ownerName }: { id: string, projectName: string, ownerName: string }) => {
+    const { mutate: accept, isPending: isAccepting } = useAcceptInvite()
+    const { mutate: decline, isPending: isDeclining } = useDeclineInvite()
+
+    return (
+        <Card className="w-full p-2">
+            <div className="flex items-center justify-between">
+
+                <div className="flex items-center">
+                    <Image src={'https://png.pngtree.com/png-vector/20231019/ourmid/pngtree-user-profile-avatar-png-image_10211467.png'} alt='User profile' width={50} height={50} className="rounded-full" />
+
+                    <div className="">
+                        <p className="text-sm font-semibold">{ownerName}</p>
+                        <p className="text-xs text-muted-foreground ">wants to join {projectName}</p>
+                    </div>
+                </div>
+                <div className="flex gap-2">
+                    <Button variant="outline" size="sm" disabled={isDeclining} onClick={() => decline({ requestId: id })}>
+                        Decline
+                    </Button>
+                    <Button size="sm" disabled={isAccepting} onClick={() => accept({ requestId: id })}>
+                        Accept
+                    </Button>
+                </div>
+            </div>
+        </Card>
+    )
+}
+
+const InvitedTab = () => {
+    const [invites] = useMyInvites()
+
+    if (invites.length === 0) {
+        return <p className="text-xs text-muted-foreground text-center py-6">No pending invites</p>
+    }
+
+    return (
+        <div className="space-y-3">
+            {invites.map((invite) => (
+                <InviteCard
+                    key={invite.id}
+                    id={invite.id}
+                    projectName={invite.projectName}
+                    ownerName={invite.ownerName}
+                />
+            ))}
+        </div>
+    )
+}
 
 export const DialogProjectRequest = ({ open, onOpenChange }: PropsRequest) => {
     const [searchTerm, setSearchTerm] = useState('')
@@ -353,8 +404,6 @@ export const DialogProjectRequest = ({ open, onOpenChange }: PropsRequest) => {
     const filteredJoinRequests = joinRequests.filter((j) =>
         j.userName?.toLocaleLowerCase().includes(searchTerm.toLocaleLowerCase()) ||
         j.projectName.toLocaleLowerCase().includes(searchTerm.toLocaleLowerCase())
-
-
     )
 
     return (
@@ -367,35 +416,51 @@ export const DialogProjectRequest = ({ open, onOpenChange }: PropsRequest) => {
                     </DialogTitle>
                 </DialogHeader>
 
-                {/* Search */}
-                <div className="mt-4">
-                    <EntitySearch
-                        onChange={setSearchTerm}
-                        value={searchTerm}
-                        placeholder="Search by project or owner..."
-                    />
-                </div>
+                <Tabs defaultValue="incoming">
+                    <TabsList className="w-full">
+                        <TabsTrigger value="incoming" className="flex-1">
+                            Incoming ({joinRequests.length})
+                        </TabsTrigger>
+                        <TabsTrigger value="invited" className="flex-1">
+                            Invited
+                        </TabsTrigger>
+                    </TabsList>
 
-                {/* List Section */}
-                <div className="mt-6">
-                    <div className="flex items-center justify-between mb-3">
-                        <p className="text-xs text-muted-foreground">
-                            {joinRequests.length} Pending Requests
-                        </p>
-                    </div>
-
-                    <div className="space-y-3 max-h-87.5 overflow-y-auto pr-1">
-                        {filteredJoinRequests.map((request) => (
-                            <ProjectCardRequest
-                                key={request.id}
-                                ImageProfile={'https://png.pngtree.com/png-vector/20231019/ourmid/pngtree-user-profile-avatar-png-image_10211467.png'}
-                                projectName={request.projectName}
-                                userName={request.userName ?? "Unknown"}
-                                RequestId={request.id}
+                    {/* Incoming - user ขอเข้า project ของเรา */}
+                    <TabsContent value="incoming">
+                        <div className="mt-4">
+                            <EntitySearch
+                                onChange={setSearchTerm}
+                                value={searchTerm}
+                                placeholder="Search by project or owner..."
                             />
-                        ))}
-                    </div>
-                </div>
+                        </div>
+                        <div className="space-y-3 mt-4 max-h-80 overflow-y-auto pr-1">
+                            {filteredJoinRequests.length === 0 ? (
+                                <p className="text-xs text-muted-foreground text-center py-6">No pending requests</p>
+                            ) : (
+                                filteredJoinRequests.map((request) => (
+                                    <ProjectCardRequest
+                                        key={request.id}
+                                        ImageProfile={'https://png.pngtree.com/png-vector/20231019/ourmid/pngtree-user-profile-avatar-png-image_10211467.png'}
+                                        projectName={request.projectName}
+                                        userName={request.userName ?? "Unknown"}
+                                        RequestId={request.id}
+                                    />
+                                ))
+                            )}
+                        </div>
+                    </TabsContent>
+
+                    {/* Invited - เราถูก invite */}
+                    <TabsContent value="invited">
+                        <div className="mt-4 max-h-80 overflow-y-auto pr-1">
+                            <Suspense fallback={<Spinner />}>
+                                <InvitedTab />
+                            </Suspense>
+                        </div>
+                    </TabsContent>
+                </Tabs>
             </DialogContent>
         </Dialog>
     )

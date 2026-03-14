@@ -13,6 +13,7 @@ import { Spinner } from "@/components/ui/spinner"
 import { trpc } from "@/trpc/client"
 import { AppRouter } from "@/trpc/routers/_app"
 import { inferRouterOutputs } from "@trpc/server"
+import { useRouter } from "next/navigation"
 
 
 
@@ -107,7 +108,6 @@ export const CreateProjectDialog = ({ trigger, title, description, mode, project
 
     const [dialogOpen, setDialogOpen] = useState(false)
     const { mutate: createProject, isPending: isCreating } = useCreateProject()
-    const { mutate: updateProject, isPending: isUpdating } = useUpdateProject()
     const handleSubmit = (values: Formtype) => {
         if (mode === 'create') {
             createProject({
@@ -119,16 +119,7 @@ export const CreateProjectDialog = ({ trigger, title, description, mode, project
                     setDialogOpen(false)
                 }
             })
-        } else if (mode === 'update') {
-            if (!projectId) return
-            updateProject({
-                id: projectId,
-                name: values.name,
-                description: values.description,
-                visibility: values.visibility
-            })
         }
-
     }
 
     return (
@@ -301,7 +292,9 @@ export const ProjectCard = ({ title, description, avatars, progress, completedTa
 
     const handleRemove = () => {
         removeProject.mutate({ id: id })
+
     }
+    const router = useRouter()
 
 
     return (
@@ -318,31 +311,14 @@ export const ProjectCard = ({ title, description, avatars, progress, completedTa
 
                     </DropdownMenuTrigger>
 
+
                     <DropdownMenuContent align="end">
 
-                        <CreateProjectDialog
-                            mode="update"
-                            trigger={
-                                <DropdownMenuItem onSelect={(e) => {
-                                    e.preventDefault()
-                                }}>
-                                    Update
-                                </DropdownMenuItem>
-                            }
-                            title={title}
-                            description={description}
-                            projectId={id}
-                            visibility={visibility}
-
-                        />
-
-
-                        <DropdownMenuItem
-                            onClick={handleRemove}
-                            className="text-red-500"
-                        >
-                            Delete
+                        <DropdownMenuItem onClick={() => router.push(`/projects/${id}/settings`)}>
+                            Settings
                         </DropdownMenuItem>
+
+
                     </DropdownMenuContent>
                 </DropdownMenu>
             </CardHeader>

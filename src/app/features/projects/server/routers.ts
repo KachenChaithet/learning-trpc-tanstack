@@ -226,6 +226,73 @@ export const ProjectRouter = createTRPCRouter({
                 createdAt: r.createdAt
             }))
         }),
+    // ดึง invite ที่ user ถูกเชิญเข้า project
+    getMyInvites: protectedProcedure
+        .query(async ({ ctx }) => {
+            const invites = await prisma.projectJoinRequest.findMany({
+                where: {
+                    userId: ctx.user.id,  // ← เราถูก invite
+                    status: "PENDING"
+                },
+                include: {
+                    project: {
+                        select: {
+                            id: true,
+                            name: true,
+                            projectMembers: {
+                                where: { role: "OWNER" },
+                                select: { user: { select: { name: true } } }
+                            }
+                        }
+                    }
+                },
+                orderBy: { createdAt: "desc" }
+            })
+
+            return invites.map((r) => ({
+                id: r.id,
+                projectId: r.project.id,
+                projectName: r.project.name,
+                ownerName: r.project.projectMembers[0]?.user.name ?? "Unknown",
+                createdAt: r.createdAt
+            }))
+        }),
+    acceptInvite: protectedProcedure
+        .input(z.object({ requestId: z.string() }))
+        .mutation(async ({ ctx, input }) => {
+            const request = await prisma.projectJoinRequest.findFirst({
+                where: { id: input.requestId, userId: ctx.user.id } // ← เช็คว่าเป็น user คนนี้จริง
+            })
+            if (!request) throw new TRPCError({ code: "NOT_FOUND" })
+
+            await prisma.$transaction([
+                prisma.projectJoinRequest.update({
+                    where: { id: input.requestId },
+                    data: { status: "APPROVED" }
+                }),
+                prisma.projectMember.create({
+                    data: { projectId: request.projectId, userId: ctx.user.id, role: "MEMBER" }
+                })
+            ])
+
+            return { success: true }
+        }),
+
+    declineInvite: protectedProcedure
+        .input(z.object({ requestId: z.string() }))
+        .mutation(async ({ ctx, input }) => {
+            const request = await prisma.projectJoinRequest.findFirst({
+                where: { id: input.requestId, userId: ctx.user.id }
+            })
+            if (!request) throw new TRPCError({ code: "NOT_FOUND" })
+
+            await prisma.projectJoinRequest.update({
+                where: { id: input.requestId },
+                data: { status: "REJECTED" }
+            })
+
+            return { success: true }
+        }),
 
     requestJoin: protectedProcedure.input(z.object({ projectId: z.string() }))
         .mutation(async ({ ctx, input }) => {
@@ -494,5 +561,105 @@ export const ProjectRouter = createTRPCRouter({
             }
 
             return mappedProjects
-        })
+        }),
+    getMembers: protectedProcedure
+        .input(z.object({ projectId: z.string() }))
+        .query(async ({ ctx, input }) => {
+            const isMember = await prisma.projectMember.findFirst({
+                where: { projectId: input.projectId, userId: ctx.user.id }
+            })
+            if (!isMember) throw new TRPCError({ code: "FORBIDDEN" })
+
+            return prisma.projectMember.findMany({
+                where: { projectId: input.projectId },
+                include: {
+                    user: { select: { id: true, name: true, email: true, image: true } }
+                }
+            })
+        }),
+    searchUsers: protectedProcedure
+        .input(z.object({ query: z.string(), projectId: z.string() }))
+        .query(async ({ ctx, input }) => {
+            if (input.query.length < 2) return []
+
+            return prisma.user.findMany({
+                where: {
+                    OR: [
+                        { name: { contains: input.query, mode: "insensitive" } },
+                        { id: { contains: input.query, mode: "insensitive" } },
+                        { email: { contains: input.query, mode: "insensitive" } }
+                    ],
+                    // ไม่แสดง user ที่เป็น member อยู่แล้ว
+                    NOT: {
+                        projectMembers: { some: { projectId: input.projectId } }
+                    }
+                },
+                select: { id: true, name: true, email: true, image: true },
+                take: 10
+            })
+        }),
+    // 3. เพิ่ม member เข้า project โดยตรง (owner only)
+    addMember: protectedProcedure
+        .input(z.object({ projectId: z.string(), userId: z.string() }))
+        .mutation(async ({ ctx, input }) => {
+            const isOwner = await prisma.projectMember.findFirst({
+                where: { projectId: input.projectId, userId: ctx.user.id, role: "OWNER" }
+            })
+            if (!isOwner) throw new TRPCError({ code: "FORBIDDEN" })
+
+            await prisma.projectMember.create({
+                data: { projectId: input.projectId, userId: input.userId, role: "MEMBER" }
+            })
+
+            await createNotification({
+                userId: input.userId,
+                link: "/projects",
+                type: "PROJECT_MEMBER_ADDED"
+            })
+
+            return { success: true }
+        }),
+
+    // 4. kick member ออกจาก project (owner only)
+    removeMember: protectedProcedure
+        .input(z.object({ projectId: z.string(), userId: z.string() }))
+        .mutation(async ({ ctx, input }) => {
+            const isOwner = await prisma.projectMember.findFirst({
+                where: { projectId: input.projectId, userId: ctx.user.id, role: "OWNER" }
+            })
+            if (!isOwner) throw new TRPCError({ code: "FORBIDDEN" })
+
+            await prisma.projectMember.delete({
+                where: { userId_projectId: { userId: input.userId, projectId: input.projectId } }
+            })
+
+            return { success: true }
+        }),
+    inviteUser: protectedProcedure
+        .input(z.object({ projectId: z.string(), userId: z.string() }))
+        .mutation(async ({ ctx, input }) => {
+            const isOwner = await prisma.projectMember.findFirst({
+                where: { projectId: input.projectId, userId: ctx.user.id, role: "OWNER" }
+            })
+            if (!isOwner) throw new TRPCError({ code: "FORBIDDEN" })
+
+            // สร้าง join request แทน add เลย
+            await prisma.projectJoinRequest.create({
+                data: {
+                    projectId: input.projectId,
+                    userId: input.userId,
+                    status: "PENDING"
+                }
+            })
+
+            // แจ้ง user ที่ถูก invite
+            await createNotification({
+                userId: input.userId,
+                link: "/projects",
+                type: "PROJECT_JOIN_REQUEST"
+            })
+
+            return { success: true }
+        }),
+
 })

@@ -12,6 +12,35 @@ export const useSuspenseProjectsPublic = () => {
 export const useSuspenseProjectJoinRequests = () => {
     return trpc.projects.getJoinRequests.useSuspenseQuery()
 }
+export const useMyInvites = () => {
+    return trpc.projects.getMyInvites.useSuspenseQuery()
+}
+
+
+// accept invite
+export const useAcceptInvite = () => {
+    const utils = trpc.useUtils()
+    return trpc.projects.acceptInvite.useMutation({
+        onSuccess: async () => {
+            toast.success("Joined project")
+            await utils.projects.getMyInvites.invalidate()
+            await utils.projects.filterProjects.invalidate()
+        },
+        onError: (err) => toast.error(err.message)
+    })
+}
+
+// decline invite
+export const useDeclineInvite = () => {
+    const utils = trpc.useUtils()
+    return trpc.projects.declineInvite.useMutation({
+        onSuccess: async () => {
+            toast.success("Invite declined")
+            await utils.projects.getMyInvites.invalidate()
+        },
+        onError: (err) => toast.error(err.message)
+    })
+}
 
 export const useCreateProject = () => {
     const utils = trpc.useUtils()
