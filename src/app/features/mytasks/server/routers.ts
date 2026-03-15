@@ -121,6 +121,12 @@ export const TaskRouter = createTRPCRouter({
                 if (existingTask.status === input.status) {
                     throw new TRPCError({ code: "FORBIDDEN" })
                 }
+                const isAssignee = await tx.task.findFirst({
+                    where: { id: input.taskId, assigneeId: ctx.user.id }
+                })
+                if (!isAssignee) {
+                    throw new TRPCError({ code: "FORBIDDEN", message: "You are not the assignee" })
+                }
 
                 const updatedTask = await tx.task.update({
                     where: {

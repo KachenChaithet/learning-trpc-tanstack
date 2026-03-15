@@ -11,6 +11,8 @@ import { socket } from "@/lib/socket"
 import { authClient } from "@/lib/auth-client"
 import { registerPush } from "@/app/features/notifications/hooks/use-push"
 import { NotificationPermissionButton } from "@/app/features/notifications/components/notification-permission-button"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import Link from "next/link"
 
 export const AppHeaderContainer = () => {
 
@@ -71,7 +73,12 @@ export const AppHeaderContainer = () => {
                 <NotificationDropdown data={data} isLoading={isLoading} />
             </Popover>
             <NotificationPermissionButton />
-            <Image src={'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQanlasPgQjfGGU6anray6qKVVH-ZlTqmuTHw&s'} alt="image profile" width={32} height={32} />
+            <Link href={'/profile'}>
+                <Avatar>
+                    <AvatarImage src={session?.user.image ?? ""} />
+                    <AvatarFallback>{session?.user.name?.[0]}</AvatarFallback>
+                </Avatar>
+            </Link>
         </div>
     )
 

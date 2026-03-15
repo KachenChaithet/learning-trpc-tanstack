@@ -2,8 +2,8 @@ import { trpc } from "@/trpc/client"
 import { useQueryClient, useSuspenseQuery } from "@tanstack/react-query"
 import { toast } from "sonner"
 
-export const useSuspenseProjectsMine = () => {
-    return trpc.projects.getMine.useSuspenseQuery()
+export const useProjectsMine = () => {
+    return trpc.projects.getMine.useQuery()
 }
 
 export const useSuspenseProjectsPublic = () => {
@@ -62,6 +62,7 @@ export const useRemoveProject = () => {
         onSuccess: async (data) => {
             toast.success(`Delete Project "${data.name}"`)
             await utils.projects.filterProjects.invalidate()
+            await utils.projects.getMine.invalidate()
         },
         onError: (err) => {
             if (err.data?.code === "FORBIDDEN") {
@@ -80,6 +81,8 @@ export const useUpdateProject = () => {
         onSuccess: async (data) => {
             toast.success(`Update Project "${data.name}"`)
             await utils.projects.filterProjects.invalidate()
+            await utils.projects.getMine.invalidate()
+
         },
         onError: (err) => {
             if (err.data?.code === "FORBIDDEN") {

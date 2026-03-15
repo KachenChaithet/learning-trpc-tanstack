@@ -12,6 +12,7 @@ import { zodResolver } from "@hookform/resolvers/zod"
 import z from "zod"
 import { toast } from "sonner"
 import { useEffect } from "react"
+import { useProjectsMine, useRemoveProject, useUpdateProject } from "../../hooks/use-projects"
 
 const formSchema = z.object({
     name: z.string().min(1, "Project name is required").max(100),
@@ -26,21 +27,11 @@ interface Props {
 }
 
 export const GeneralSettings = ({ projectId }: Props) => {
-    const { data: projects = [] } = trpc.projects.getMine.useQuery()
+    const { data: projects = [] } = useProjectsMine()
     const project = projects.find((p) => p.id === projectId)
 
-    const updateProject = trpc.projects.update.useMutation({
-        onSuccess: () => toast.success("Project updated"),
-        onError: (err) => toast.error(err.message)
-    })
-
-    const removeProject = trpc.projects.remove.useMutation({
-        onSuccess: () => {
-            toast.success("Project deleted")
-            window.location.href = "/projects"
-        },
-        onError: (err) => toast.error(err.message)
-    })
+    const { mutate: updateProject, isPending: isUpdateProject } = useUpdateProject()
+    const { mutate: removeProject, isPending: isRemoveProject } = useRemoveProject()
 
     const form = useForm<FormType>({
         resolver: zodResolver(formSchema),
@@ -63,7 +54,7 @@ export const GeneralSettings = ({ projectId }: Props) => {
     }, [project, form])
 
     const onSubmit = (values: FormType) => {
-        updateProject.mutate({
+        updateProject({
             id: projectId,
             name: values.name,
             description: values.description,
@@ -121,8 +112,8 @@ export const GeneralSettings = ({ projectId }: Props) => {
                             </FormItem>
                         )} />
 
-                        <Button disabled={updateProject.isPending}>
-                            {updateProject.isPending ? "Saving..." : "Save Changes"}
+                        <Button disabled={isUpdateProject}>
+                            {isUpdateProject ? "Saving..." : "Save Changes"}
                         </Button>
                     </form>
                 </Form>
@@ -137,10 +128,10 @@ export const GeneralSettings = ({ projectId }: Props) => {
                     </div>
                     <Button
                         variant="destructive"
-                        disabled={removeProject.isPending}
-                        onClick={() => removeProject.mutate({ id: projectId })}
+                        disabled={isRemoveProject}
+                        onClick={() => removeProject({ id: projectId })}
                     >
-                        {removeProject.isPending ? "Deleting..." : "Delete Project"}
+                        {isRemoveProject ? "Deleting..." : "Delete Project"}
                     </Button>
                 </div>
             </Card>

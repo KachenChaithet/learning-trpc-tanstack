@@ -60,7 +60,8 @@ export function KanbanBoard({ tasks }: Props) {
         const newStatus = VALID_STATUSES.includes(over.id as string)
             ? (over.id as TaskStatus)
             : (tasks.find((t) => t.id === over.id)?.status as TaskStatus)
-
+        console.log("over.id:", over.id)
+        console.log("newStatus:", newStatus)
         if (!newStatus) return
 
         const task = tasks.find((t) => t.id === active.id)

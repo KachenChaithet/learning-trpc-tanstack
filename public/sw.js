@@ -8,6 +8,8 @@ self.addEventListener("push", function (event) {
     } catch {
         data = { title: "Notification", body: event.data.text(), url: "/" }
     }
+
+
     const options = {
         body: data.type,
         icon: "/logos/logoipsum-389.svg",
