@@ -28,7 +28,7 @@ export const createNotification = async ({
             userId
         }
     })
-    
+    console.log("subscriptions found:", subscriptions.length) 
     for (const sub of subscriptions) {
         await sendPush(sub, notification)
     }

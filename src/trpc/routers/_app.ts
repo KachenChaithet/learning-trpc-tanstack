@@ -5,6 +5,7 @@ import { TaskRouter } from '@/app/features/mytasks/server/routers';
 import { DashboardRouter } from '@/app/features/dashboard/server/routers';
 import { activityRouter } from '@/app/features/activity/server/routers';
 import { notificationRouter } from '@/app/features/notifications/server/routers';
+import { ProfileRouter } from '@/app/features/profile/server/routers';
 export const appRouter = createTRPCRouter({
     hello: protectedProcedure
         .query(({ ctx, input }) => {
@@ -17,6 +18,7 @@ export const appRouter = createTRPCRouter({
     dashboard: DashboardRouter,
     activity: activityRouter,
     notification: notificationRouter,
+    profile: ProfileRouter,
 
 });
 // export type definition of API
