@@ -128,8 +128,7 @@ export type ActivityFiltersState = {
     sort: "asc" | "desc"
 }
 type RouterOutputs = inferRouterOutputs<AppRouter>
-
-type Activity = RouterOutputs["activity"]["list"][number]
+type Activity = RouterOutputs["activity"]["list"]["items"][number] // ← เปลี่ยนตรงนี้
 type ActivityListProps = {
     activities: Activity[]
     fetchNextPage: () => void
@@ -281,6 +280,7 @@ export const ActivityContainer = ({ children }: { children: React.ReactNode }) =
         isFetchingNextPage,
         isLoading } = useInfiniteActivities(filters)
 
+    console.log("activities count:", activities.length)
     const userOptions = users?.map((p) => ({
         value: p.id,
         label: p.name ?? "Unknow User"

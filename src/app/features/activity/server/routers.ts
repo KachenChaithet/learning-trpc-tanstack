@@ -94,10 +94,12 @@ export const activityRouter = createTRPCRouter({
             eventType: z.nativeEnum(ActivityType).optional(),
             sort: z.enum(["asc", "desc"]).default('desc'),
             take: z.number().default(20),
-            cursor: z.string().nullish(),
+            cursor: z.string().optional()
         }))
         .query(async ({ ctx, input }) => {
-            console.log("cursor:", input.cursor)
+            console.log("input.take:", input.take)
+            console.log("input.cursor:", input.cursor)
+
             const items = await prisma.activityLog.findMany({
                 where: {
                     project: {
@@ -105,126 +107,106 @@ export const activityRouter = createTRPCRouter({
                             some: { userId: ctx.user.id }
                         }
                     },
-
-                    ...(input.projectId && {
-                        projectId: input.projectId
-                    }),
-
-                    ...(input.userId && {
-                        actorId: input.userId
-                    }),
-
-                    ...(input.eventType && {
-                        type: input.eventType
-                    }),
-
+                    ...(input.projectId && { projectId: input.projectId }),
+                    ...(input.userId && { actorId: input.userId }),
+                    ...(input.eventType && { type: input.eventType }),
                     ...(input.search && {
                         OR: [
-                            {
-                                task: {
-                                    title: {
-                                        contains: input.search,
-                                        mode: 'insensitive'
-                                    }
-                                },
-                                project: {
-                                    name: {
-                                        contains: input.search,
-                                        mode: "insensitive"
-                                    }
-                                }
-                            }
+                            { task: { title: { contains: input.search, mode: 'insensitive' } } },
+                            { project: { name: { contains: input.search, mode: "insensitive" } } }
                         ]
                     })
                 },
                 take: input.take + 1,
-                include: {
-                    actor: true,
-                    task: true,
-                    project: true
-                },
-                cursor: input.cursor
-                    ? { id: input.cursor }
-                    : undefined,
+                include: { actor: true, task: true, project: true },
+                cursor: input.cursor ? { id: input.cursor } : undefined,
                 skip: input.cursor ? 1 : 0,
-                orderBy: {
-                    createdAt: input.sort
-                }
+                orderBy: { createdAt: input.sort }
             })
+            console.log("items.length after query:", items.length)
 
-            return items.map((a) => {
-                switch (a.type) {
-                    case "TASK_CREATED":
-                        return {
-                            id: a.id,
-                            name: a.actor?.name ?? "Unknown User",
-                            action: "created task",
-                            target: a.task?.title,
-                            targetId: a.task?.id,
-                            createdAt: a.createdAt,
-                            category: a.type,
-                            isSystem: !a.actor,
-                            dateKey: a.createdAt.toISOString().split("T")[0],
-                        }
 
-                    case "TASK_STATUS_CHANGED":
-                        return {
-                            id: a.id,
-                            name: a.actor?.name ?? "Unknown User",
-                            action: "changed status of",
-                            target: a.task?.title,
-                            targetId: a.task?.id,
-                            createdAt: a.createdAt,
-                            category: a.type,
-                            isSystem: !a.actor,
-                            dateKey: a.createdAt.toISOString().split("T")[0],
-                        }
-                    case "TASK_ASSIGNED": {
-                        const meta = a.metadata as {
-                            assigneeId?: string
-                            assigneeName?: string
-                        } | null
-                        return {
-                            id: a.id,
-                            name: a.actor?.name ?? "Unknown User",
-                            action: meta?.assigneeName
-                                ? `assigned task to ${meta.assigneeName}`
-                                : 'assigned task',
-                            target: a.task?.title,
-                            targetId: a.task?.id,
-                            createdAt: a.createdAt,
-                            category: a.type,
-                            isSystem: !a.actor,
-                            dateKey: a.createdAt.toISOString().split("T")[0],
+            const hasMore = items.length > input.take
+            const slice = hasMore ? items.slice(0, input.take) : items
+            const nextCursor = hasMore ? slice[slice.length - 1].id : null
+
+            const total = await prisma.activityLog.count({
+                where: {
+                    project: {
+                        projectMembers: {
+                            some: { userId: ctx.user.id }
                         }
                     }
-                    case "PROJECT_CREATED": {
-                        return {
-                            id: a.id,
-                            name: a.actor?.name ?? "Unknown User",
-                            action: "created project",
-                            target: a.project?.name,
-                            targetId: a.task?.id,
-                            createdAt: a.createdAt,
-                            category: a.type,
-                            isSystem: !a.actor,
-                            dateKey: a.createdAt.toISOString().split("T")[0],
-                        }
-                    }
-
-
-                    default:
-                        return {
-                            id: a.id,
-                            name: a.actor?.name ?? "Unknown User",
-                            action: "did something",
-                            createdAt: a.createdAt,
-                            category: a.type,
-                            isSystem: !a.actor,
-                            dateKey: a.createdAt.toISOString().split("T")[0],
-                        }
                 }
             })
+            console.log("total:", total)
+            return {
+                nextCursor,
+                items: slice.map((a) => {
+                    switch (a.type) {
+                        case "TASK_CREATED":
+                            return {
+                                id: a.id,
+                                name: a.actor?.name ?? "Unknown User",
+                                action: "created task",
+                                target: a.task?.title,
+                                targetId: a.task?.id,
+                                createdAt: a.createdAt,
+                                category: a.type,
+                                isSystem: !a.actor,
+                                dateKey: a.createdAt.toISOString().split("T")[0],
+                            }
+                        case "TASK_STATUS_CHANGED":
+                            return {
+                                id: a.id,
+                                name: a.actor?.name ?? "Unknown User",
+                                action: "changed status of",
+                                target: a.task?.title,
+                                targetId: a.task?.id,
+                                createdAt: a.createdAt,
+                                category: a.type,
+                                isSystem: !a.actor,
+                                dateKey: a.createdAt.toISOString().split("T")[0],
+                            }
+                        case "TASK_ASSIGNED": {
+                            const meta = a.metadata as { assigneeId?: string, assigneeName?: string } | null
+                            return {
+                                id: a.id,
+                                name: a.actor?.name ?? "Unknown User",
+                                action: meta?.assigneeName ? `assigned task to ${meta.assigneeName}` : 'assigned task',
+                                target: a.task?.title,
+                                targetId: a.task?.id,
+                                createdAt: a.createdAt,
+                                category: a.type,
+                                isSystem: !a.actor,
+                                dateKey: a.createdAt.toISOString().split("T")[0],
+                            }
+                        }
+                        case "PROJECT_CREATED":
+                            return {
+                                id: a.id,
+                                name: a.actor?.name ?? "Unknown User",
+                                action: "created project",
+                                target: a.project?.name,
+                                targetId: a.task?.id,
+                                createdAt: a.createdAt,
+                                category: a.type,
+                                isSystem: !a.actor,
+                                dateKey: a.createdAt.toISOString().split("T")[0],
+                            }
+                        default:
+                            return {
+                                id: a.id,
+                                name: a.actor?.name ?? "Unknown User",
+                                action: "did something",
+                                createdAt: a.createdAt,
+                                category: a.type,
+                                isSystem: !a.actor,
+                                dateKey: a.createdAt.toISOString().split("T")[0],
+                            }
+                    }
+                })
+            }
         }),
     listForFilter: protectedProcedure.query(async ({ ctx }) => {
         return prisma.user.findMany({

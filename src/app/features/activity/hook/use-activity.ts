@@ -13,25 +13,16 @@ type Filters = {
     sort: "asc" | "desc"
 }
 
-
-
 export const useInfiniteActivities = (filters: Filters) => {
     const query = trpc.activity.list.useInfiniteQuery(
+        { ...filters, take: 10 },
         {
-            ...filters,
-            take: 29,
-        },
-        {
-            initialCursor: null,
-            getNextPageParam: (lastPage) =>
-                lastPage.length
-                    ? lastPage[lastPage.length - 1].id
-                    : undefined,
+            getNextPageParam: (lastPage) => lastPage.nextCursor ?? undefined,
         }
     )
-
-    const activities = query.data?.pages.flat() ?? []
-
+    console.log("pageParams:", JSON.stringify(query.data?.pageParams)) // ← ตรงนี้
+    console.log("page[1]:", JSON.stringify(query.data?.pages[1]))
+    const activities = query.data?.pages.flatMap((p) => p.items) ?? []
     return {
         ...query,
         activities,
