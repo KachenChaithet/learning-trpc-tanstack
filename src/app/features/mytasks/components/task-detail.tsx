@@ -18,7 +18,7 @@ import Link from "next/link"
 import { notFound } from "next/navigation"
 import { useEffect, useRef, useState } from "react"
 import { toast } from "sonner"
-import { useDuplicateTask, useUpdateArchive, useUpdateStatus } from "../hooks/use-tasks"
+import { useDuplicateTask, useRemoveTask, useUnassignTask, useUpdateArchive, useUpdateStatus } from "../hooks/use-tasks"
 
 type RouterOutputs = inferRouterOutputs<AppRouter>
 type Task = RouterOutputs["tasks"]["getDetailTask"]
@@ -243,6 +243,8 @@ export const TaskDetailContainer = ({ children, taskId }: { children: React.Reac
     const { mutate: updateStatus } = useUpdateStatus()
     const { mutate: updateArchive, isPending: isupdateArchive } = useUpdateArchive()
     const { mutate: duplicateTask, isPending: isduplicateTask } = useDuplicateTask()
+    const { mutate: unassignTask, isPending: isUnassignTask } = useUnassignTask()
+    const { mutate: removeTask, isPending: isRemoveTask } = useRemoveTask()
 
     const utils = trpc.useUtils()
 
@@ -252,7 +254,7 @@ export const TaskDetailContainer = ({ children, taskId }: { children: React.Reac
         }
     })
     const { data: comments = [] } = trpc.tasks.getTaskComments.useQuery({ taskId })
-
+    const isOwnerOrAdmin = data?.currentUserRole === "OWNER" || data?.currentUserRole === "ADMIN"
     useEffect(() => {
         socket.emit('join-task', taskId)
         const handleNewComment = (comment: Comments) => {
@@ -337,6 +339,30 @@ export const TaskDetailContainer = ({ children, taskId }: { children: React.Reac
                         >
                             Archive
                         </Button>
+                        {data.assigneeId && isOwnerOrAdmin && (
+                            <Button
+                                variant={'ghost'}
+                                className="text-red-500 hover:text-red-600"
+                                disabled={isUnassignTask}
+                                onClick={() => unassignTask({ taskId })}
+                            >
+                                Unassign
+                            </Button>
+                        )}
+
+                        {isOwnerOrAdmin && (
+                            <Button
+                                variant={'ghost'}
+                                className="text-red-500 hover:text-red-600"
+                                disabled={isRemoveTask}
+                                onClick={() => removeTask({ taskId })}
+                            >
+                                Delete
+
+
+                            </Button>
+                        )}
+
                         <Button
                             disabled={data.status === 'DONE'}
                             onClick={() => updateStatus({ status: "DONE", taskId })}

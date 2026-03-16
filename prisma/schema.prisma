@@ -150,14 +150,14 @@ enum ActivityType {
   TASK_STATUS_CHANGED //done
   TASK_PRIORITY_CHANGED //todo
   TASK_ASSIGNED //done
-  TASK_UNASSIGNED //todo
+  TASK_UNASSIGNED //done
   TASK_DELETED //todo
 
   PROJECT_CREATED //done
-  PROJECT_MEMBER_ADDED //todo
-  PROJECT_MEMBER_REMOVED //todo
+  PROJECT_MEMBER_ADDED //done
+  PROJECT_MEMBER_REMOVED //done
 
-  COMMENT_ADDED //todo
+  COMMENT_ADDED //done
 }
 
 model ActivityLog {

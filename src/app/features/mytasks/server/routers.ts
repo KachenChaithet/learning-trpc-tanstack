@@ -5,7 +5,7 @@ import { createTRPCRouter, protectedProcedure } from "@/trpc/init";
 import { TRPCError } from "@trpc/server";
 import { task } from "better-auth/react";
 import { id, pl } from "date-fns/locale";
-import { ReceiptRussianRuble } from "lucide-react";
+import { ReceiptRussianRuble, TicketSlash } from "lucide-react";
 import z from "zod";
 
 export const TaskRouter = createTRPCRouter({
@@ -103,6 +103,46 @@ export const TaskRouter = createTRPCRouter({
                 return task
             })
 
+        }),
+    updatePriority: protectedProcedure
+        .input(z.object({
+            taskId: z.string(),
+            priority: z.enum(["LOW", "MEDIUM", "HIGH"])
+        }))
+        .mutation(async ({ ctx, input }) => {
+            return prisma.$transaction(async (tx) => {
+                const task = await tx.task.findUnique({
+                    where: { id: input.taskId },
+                    select: { priority: true, projectId: true }
+                })
+
+                if (!task) throw new TRPCError({ code: "NOT_FOUND" })
+
+                const isMember = await tx.projectMember.findFirst({
+                    where: { projectId: task.projectId, userId: ctx.user.id }
+                })
+                if (!isMember) throw new TRPCError({ code: "FORBIDDEN" })
+
+                const updatedTask = await tx.task.update({
+                    where: { id: input.taskId },
+                    data: { priority: input.priority }
+                })
+
+                await tx.activityLog.create({
+                    data: {
+                        type: "TASK_PRIORITY_CHANGED",
+                        actorId: ctx.user.id,
+                        projectId: task.projectId,
+                        taskId: input.taskId,
+                        metadata: {
+                            from: task.priority,
+                            to: input.priority
+                        }
+                    }
+                })
+
+                return updatedTask
+            })
         }),
     updateStatus: protectedProcedure
         .input(z.object({ taskId: z.string(), status: z.nativeEnum(TaskStatus) }))
@@ -403,7 +443,11 @@ export const TaskRouter = createTRPCRouter({
                     project: {
                         select: {
                             id: true,
-                            name: true
+                            name: true,
+                            projectMembers: {
+                                where: { userId: ctx.user.id },
+                                select: { role: true }
+                            }
                         }
                     },
                     createdBy: {
@@ -517,7 +561,8 @@ export const TaskRouter = createTRPCRouter({
 
             return {
                 ...task,
-                activityLogs: activities
+                activityLogs: activities,
+                currentUserRole: task.project.projectMembers[0]?.role ?? null
             }
         }),
     getTaskComments: protectedProcedure
@@ -557,12 +602,26 @@ export const TaskRouter = createTRPCRouter({
                 }
             })
 
+
             const task = await prisma.task.findUnique({
                 where: {
                     id: input.taskId
                 },
                 select: {
-                    assigneeId: true
+                    assigneeId: true,
+                    projectId: true
+                }
+            })
+
+            await prisma.activityLog.create({
+                data: {
+                    type: 'COMMENT_ADDED',
+                    actorId: ctx.user.id,
+                    projectId: task?.projectId,
+                    taskId: input.taskId,
+                    metadata: {
+                        commentId: comment.id
+                    }
                 }
             })
 
@@ -589,7 +648,28 @@ export const TaskRouter = createTRPCRouter({
         }),
     updateArchive: protectedProcedure
         .input(z.object({ taskId: z.string() }))
-        .mutation(({ ctx, input }) => {
+        .mutation(async ({ ctx, input }) => {
+
+            const task = await prisma.task.findUnique({
+                where: {
+                    id: input.taskId
+                },
+                include: {
+                    project: {
+                        include: {
+                            projectMembers: true
+                        }
+                    }
+                }
+            })
+
+            if (!task) throw new TRPCError({ code: 'NOT_FOUND' })
+
+            const member = task.project.projectMembers.find(m => m.userId === ctx.user.id)
+            if (!member) throw new TRPCError({ code: 'FORBIDDEN', message: "You are not a member of this project" })
+
+            if (member.role === 'MEMBER') throw new TRPCError({ code: 'FORBIDDEN', message: "You don't have permission to archive this task" })
+
             return prisma.task.update({
                 where: {
                     id: input.taskId
@@ -638,50 +718,95 @@ export const TaskRouter = createTRPCRouter({
             })
 
             return newTask
+        }),
+    unassignTask: protectedProcedure
+        .input(z.object({ taskId: z.string() }))
+        .mutation(async ({ ctx, input }) => {
+            return prisma.$transaction(async (tx) => {
+                const task = await tx.task.findUnique({
+                    where: { id: input.taskId },
+                    select: {
+                        assigneeId: true,
+                        projectId: true,
+                        title: true
+                    }
+                })
+
+                if (!task) throw new TRPCError({ code: 'NOT_FOUND' })
+
+                const isMember = await tx.projectMember.findFirst({
+                    where: {
+                        projectId: task.projectId,
+                        userId: ctx.user.id,
+                        role: { in: ['ADMIN', 'OWNER'] }
+                    }
+                })
+                if (!isMember) throw new TRPCError({ code: "FORBIDDEN" })
+
+                const updateTask = await tx.task.update({
+                    where: { id: input.taskId },
+                    data: { assigneeId: null }
+                })
+
+                await tx.activityLog.create({
+                    data: {
+                        type: 'TASK_UNASSIGNED',
+                        actorId: ctx.user.id,
+                        projectId: task.projectId,
+                        taskId: input.taskId,
+                        metadata: {
+                            previousAssigneeId: task.assigneeId
+                        }
+                    }
+                })
+
+                return updateTask
+            })
+        }),
+    removeTask: protectedProcedure
+        .input(z.object({ taskId: z.string() }))
+        .mutation(async ({ ctx, input }) => {
+            const task = await prisma.task.findUnique({
+                where: { id: input.taskId },
+                include: {
+                    createdBy: true,
+                }
+            })
+
+            if (!task) throw new TRPCError({ code: "NOT_FOUND" })
+
+            const isOwner = await prisma.projectMember.findFirst({
+                where: {
+                    projectId: task.projectId,
+                    userId: ctx.user.id,
+                    role: "OWNER"
+                }
+            })
+
+
+            if (!isOwner && task.createdById !== ctx.user.id) {
+                throw new TRPCError({ code: "FORBIDDEN" })
+            }
+
+            return prisma.$transaction(async (tx) => {
+                await tx.activityLog.create({
+                    data: {
+                        type: "TASK_DELETED",
+                        actorId: ctx.user.id,
+                        projectId: task.projectId,
+                        metadata: {
+                            taskTitle: task.title
+                        }
+                    }
+                })
+
+                return tx.task.delete({
+                    where: {
+                        id: input.taskId
+                    }
+                })
+            })
+
         })
 
-    // remove: protectedProcedure
-    //     .input(z.object({ id: z.string() }))
-    //     .mutation(({ ctx, input }) => {
-    //         return prisma.project.delete({
-    //             where: {
-    //                 id: input.id,
-    //             }
-    //         })
-    //     }),
-
-    // update: protectedProcedure
-    //     .input(z.object({
-    //         id: z.string(),
-    //         name: z.string()
-    //             .min(1, "Project name is required")
-    //             .max(100, "Project too long"),
-    //         description: z.string()
-    //             .max(500, "Description too long")
-    //             .optional()
-    //     }))
-    //     .mutation(async ({ ctx, input }) => {
-    //         const project = await prisma.project.findFirst({
-    //             where: {
-    //                 id: input.id,
-    //                 projectMembers: {
-    //                     some: {
-    //                         userId: ctx.user.id
-    //                     }
-    //                 }
-    //             }
-    //         })
-
-    //         if (!project) throw new TRPCError({ code: "FORBIDDEN" })
-
-    //         return prisma.project.update({
-    //             where: {
-    //                 id: input.id,
-    //             },
-    //             data: {
-    //                 name: input.name,
-    //                 description: input.description
-    //             }
-    //         })
-    //     })
 })

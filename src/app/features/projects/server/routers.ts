@@ -481,7 +481,7 @@ export const ProjectRouter = createTRPCRouter({
     filterProjects: protectedProcedure
         .input(z.object({
             search: z.string().optional(),
-            status: z.enum(["planning", "in_progress", "on_hold", "completed"]).default("planning").optional(),
+            status: z.enum(["planning", "in_progress", "on_hold", "completed"]).optional(),
             owner: z.string().optional()
         }))
         .query(async ({ ctx, input }) => {
@@ -598,27 +598,6 @@ export const ProjectRouter = createTRPCRouter({
                 take: 10
             })
         }),
-    // 3. เพิ่ม member เข้า project โดยตรง (owner only)
-    addMember: protectedProcedure
-        .input(z.object({ projectId: z.string(), userId: z.string() }))
-        .mutation(async ({ ctx, input }) => {
-            const isOwner = await prisma.projectMember.findFirst({
-                where: { projectId: input.projectId, userId: ctx.user.id, role: "OWNER" }
-            })
-            if (!isOwner) throw new TRPCError({ code: "FORBIDDEN" })
-
-            await prisma.projectMember.create({
-                data: { projectId: input.projectId, userId: input.userId, role: "MEMBER" }
-            })
-
-            await createNotification({
-                userId: input.userId,
-                link: "/projects",
-                type: "PROJECT_MEMBER_ADDED"
-            })
-
-            return { success: true }
-        }),
 
     // 4. kick member ออกจาก project (owner only)
     removeMember: protectedProcedure
@@ -629,9 +608,23 @@ export const ProjectRouter = createTRPCRouter({
             })
             if (!isOwner) throw new TRPCError({ code: "FORBIDDEN" })
 
-            await prisma.projectMember.delete({
-                where: { userId_projectId: { userId: input.userId, projectId: input.projectId } }
-            })
+            await prisma.$transaction([
+                prisma.projectMember.delete({
+                    where: { userId_projectId: { userId: input.userId, projectId: input.projectId } }
+                }),
+                prisma.activityLog.create({
+                    data: {
+                        type: "PROJECT_MEMBER_REMOVED",
+                        actorId: ctx.user.id,
+                        projectId: input.projectId,
+                        metadata: {
+                            userId: input.userId
+                        }
+                    }
+                })
+
+            ])
+
 
             return { success: true }
         }),
@@ -649,6 +642,17 @@ export const ProjectRouter = createTRPCRouter({
                     projectId: input.projectId,
                     userId: input.userId,
                     status: "PENDING"
+                }
+            })
+
+            await prisma.activityLog.create({
+                data: {
+                    type: 'PROJECT_MEMBER_ADDED',
+                    actorId: ctx.user.id,
+                    projectId: input.projectId,
+                    metadata: {
+                        userId: input.userId
+                    }
                 }
             })
 

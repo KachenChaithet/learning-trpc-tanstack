@@ -223,8 +223,16 @@ export const ActivityList = ({ activities, fetchNextPage, hasNextPage, isFetchin
                                     </span>
 
                                     {activity.target && (
-                                        <Button className="text-primary  cursor-pointer text-xs md:text-[16px]" variant={'link'} asChild>
-                                            <Link href={`/my-tasks/${activity.targetId}`}>
+                                        <Button className="text-primary cursor-pointer text-xs md:text-[16px]" variant={'link'} asChild>
+                                            <Link href={
+                                                activity.category === "PROJECT_MEMBER_ADDED"
+                                                    ? `/projects/${activity.targetId}/settings`
+                                                    : activity.category === "PROJECT_CREATED" || activity.category === "PROJECT_MEMBER_REMOVED"
+                                                        ? `/projects`
+                                                        : activity.category === "TASK_DELETED"
+                                                            ? `/my-tasks`
+                                                            : `/my-tasks/${activity.targetId}`
+                                            }>
                                                 {activity.target}
                                             </Link>
                                         </Button>

@@ -6,7 +6,7 @@ import { Progress } from "@/components/ui/progress"
 import { Banknote, CalendarIcon, Clock, EllipsisVerticalIcon, FileClock, PlusIcon, ReceiptRussianRuble, UserPlusIcon } from "lucide-react"
 import React, { Suspense, useState } from "react"
 import DialogProjects, { DialogProjectJoin, DialogProjectRequest, Formtype } from "./dialog"
-import { useCreateProject, useFilterProject, useRemoveProject,  useUpdateProject } from "../hooks/use-projects"
+import { useCreateProject, useFilterProject, useRemoveProject, useUpdateProject } from "../hooks/use-projects"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Spinner } from "@/components/ui/spinner"
@@ -18,6 +18,7 @@ import { useRouter } from "next/navigation"
 
 
 const projectStatusOptions = [
+    { label: "All", value: "ALL" },
     { label: "Planning", value: "planning" },
     { label: "In Progress", value: "in_progress" },
     { label: "On Hold", value: "on_hold" },
@@ -219,9 +220,9 @@ export const ProjectSelect = ({ filters, onChage, ownerOptions }: ProjectSelectP
         <div className="flex gap-2">
             <EntitySelect
 
-                value={filters.status}
+                value={filters.status ?? "ALL"}
                 onChange={(value) =>
-                    onChage({ ...filters, status: value as ProjectFiltersState['status'] })
+                    onChage({ ...filters, status: value === "ALL" ? undefined : value as ProjectFiltersState['status'] })
                 }
                 options={projectStatusOptions}
                 placeholder="Select status"
@@ -398,14 +399,14 @@ type ProjectContainerProps = {
 }
 type ProjectFiltersState = {
     search: string
-    status: "planning" | "in_progress" | "on_hold" | "completed"
+    status: "planning" | "in_progress" | "on_hold" | "completed" | undefined
     owner: string
 }
 
 export const ProjectContainer = ({ children }: ProjectContainerProps) => {
     const [filters, setFilters] = useState<ProjectFiltersState>({
         search: '',
-        status: "planning",
+        status: undefined,
         owner: "",
     })
     const { data: owners } = trpc.projects.ownerProject.useQuery()

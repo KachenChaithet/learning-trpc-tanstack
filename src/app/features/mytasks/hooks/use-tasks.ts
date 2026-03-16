@@ -92,6 +92,48 @@ export const useUpdateArchive = () => {
     })
 }
 
+export const useRemoveTask = () => {
+    const utils = trpc.useUtils()
+    const router = useRouter()
+
+
+    return trpc.tasks.removeTask.useMutation({
+        onSuccess: (data) => {
+            toast.success(`remove ${data.title} success`)
+            utils.tasks.getMany.invalidate()
+            router.push('/my-tasks')
+        },
+        onError: (err) => {
+            toast.error(err.message)
+            if (err.data?.code === "FORBIDDEN") {
+                toast.error("You don't have permission")
+                return
+            }
+
+        }
+    })
+}
+
+export const useUpdatePriority = () => {
+    const utils = trpc.useUtils()
+
+
+    return trpc.tasks.updatePriority.useMutation({
+        onSuccess: (data) => {
+            toast.success(`Update ${data.title} priority success`)
+            utils.tasks.getMany.invalidate()
+        },
+        onError: (err) => {
+            toast.error(err.message)
+            if (err.data?.code === "FORBIDDEN") {
+                toast.error("You don't have permission")
+                return
+            }
+
+        }
+    })
+}
+
 export const useDuplicateTask = () => {
     const utils = trpc.useUtils()
     const router = useRouter()
@@ -103,6 +145,25 @@ export const useDuplicateTask = () => {
             router.push(`/my-tasks/${data.id}`)
         },
         onError: (err) => {
+            toast.error(err.message)
+
+        }
+    })
+}
+
+export const useUnassignTask = () => {
+    const utils = trpc.useUtils()
+    return trpc.tasks.unassignTask.useMutation({
+        onSuccess: () => {
+            toast.success("Task unassigned")
+            utils.tasks.getDetailTask.invalidate()
+            utils.tasks.getMany.invalidate()
+        },
+        onError: (err) => {
+            if (err.data?.code === "FORBIDDEN") {
+                toast.error("You don't have permission")
+                return
+            }
             toast.error(err.message)
         }
     })

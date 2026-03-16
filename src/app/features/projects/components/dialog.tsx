@@ -333,10 +333,10 @@ const ProjectCardRequest = ({ ImageProfile, userName, projectName, RequestId }: 
                 </div>
 
                 <div className="flex gap-2">
-                    <Button variant={'outline'} onClick={() => rejectJoin({ requestId: RequestId })} disabled={isRejecting}>
+                    <Button variant={'outline'} size={'sm'} onClick={() => rejectJoin({ requestId: RequestId })} disabled={isRejecting}>
                         Reject
                     </Button>
-                    <Button onClick={() => approveJoin({ requestId: RequestId })} disabled={isApproving}>
+                    <Button size={'sm'} onClick={() => approveJoin({ requestId: RequestId })} disabled={isApproving}>
                         Accept
                     </Button>
                 </div>
@@ -376,8 +376,7 @@ const InviteCard = ({ id, projectName, ownerName }: { id: string, projectName: s
     )
 }
 
-const InvitedTab = () => {
-    const [invites] = useMyInvites()
+const InvitedTab = ({ invites }: { invites: ReturnType<typeof useMyInvites>[0] }) => {
 
     if (invites.length === 0) {
         return <p className="text-xs text-muted-foreground text-center py-6">No pending invites</p>
@@ -399,11 +398,18 @@ const InvitedTab = () => {
 
 export const DialogProjectRequest = ({ open, onOpenChange }: PropsRequest) => {
     const [searchTerm, setSearchTerm] = useState('')
+    const [inviteSearch, setInviteSearch] = useState('')
     const [joinRequests] = useSuspenseProjectJoinRequests()
+    const [invites] = useMyInvites()
 
     const filteredJoinRequests = joinRequests.filter((j) =>
         j.userName?.toLocaleLowerCase().includes(searchTerm.toLocaleLowerCase()) ||
         j.projectName.toLocaleLowerCase().includes(searchTerm.toLocaleLowerCase())
+    )
+
+    const filteredInvites = invites.filter((i) =>
+        i.ownerName.toLocaleLowerCase().includes(inviteSearch.toLocaleLowerCase()) ||
+        i.projectName.toLocaleLowerCase().includes(inviteSearch.toLocaleLowerCase())
     )
 
     return (
@@ -422,7 +428,7 @@ export const DialogProjectRequest = ({ open, onOpenChange }: PropsRequest) => {
                             Incoming ({joinRequests.length})
                         </TabsTrigger>
                         <TabsTrigger value="invited" className="flex-1">
-                            Invited
+                            Invited ({invites.length})
                         </TabsTrigger>
                     </TabsList>
 
@@ -454,10 +460,18 @@ export const DialogProjectRequest = ({ open, onOpenChange }: PropsRequest) => {
 
                     {/* Invited - เราถูก invite */}
                     <TabsContent value="invited">
-                        <div className="mt-4 max-h-80 overflow-y-auto pr-1">
-                            <Suspense fallback={<Spinner />}>
-                                <InvitedTab />
-                            </Suspense>
+                        <div className="mt-4 space-y-4">
+                            <EntitySearch
+                                value={inviteSearch}
+                                onChange={setInviteSearch}
+                                placeholder="Search by project or owner..."
+                            />
+                            <div className="space-y-3 mt-4 max-h-80 overflow-y-auto pr-1">
+
+                                <Suspense fallback={<Spinner />}>
+                                    <InvitedTab invites={filteredInvites} />
+                                </Suspense>
+                            </div>
                         </div>
                     </TabsContent>
                 </Tabs>

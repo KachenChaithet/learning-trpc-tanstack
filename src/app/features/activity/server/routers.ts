@@ -123,7 +123,6 @@ export const activityRouter = createTRPCRouter({
                 skip: input.cursor ? 1 : 0,
                 orderBy: { createdAt: input.sort }
             })
-            console.log("items.length after query:", items.length)
 
 
             const hasMore = items.length > input.take
@@ -189,6 +188,67 @@ export const activityRouter = createTRPCRouter({
                                 action: "created project",
                                 target: a.project?.name,
                                 targetId: a.task?.id,
+                                createdAt: a.createdAt,
+                                category: a.type,
+                                isSystem: !a.actor,
+                                dateKey: a.createdAt.toISOString().split("T")[0],
+                            }
+                        case "COMMENT_ADDED":
+                            return {
+                                id: a.id,
+                                name: a.actor?.name ?? "Unknown User",
+                                action: "commented on",
+                                target: a.task?.title,
+                                targetId: a.task?.id,
+                                createdAt: a.createdAt,
+                                category: a.type,
+                                isSystem: !a.actor,
+                                dateKey: a.createdAt.toISOString().split("T")[0],
+                            }
+                        case "PROJECT_MEMBER_ADDED":
+                            return {
+                                id: a.id,
+                                name: a.actor?.name ?? "Unknown User",
+                                action: "added member to",
+                                target: a.project?.name,
+                                targetId: a.project?.id,
+                                createdAt: a.createdAt,
+                                category: a.type,
+                                isSystem: !a.actor,
+                                dateKey: a.createdAt.toISOString().split("T")[0],
+                            }
+                        case "PROJECT_MEMBER_REMOVED":
+                            return {
+                                id: a.id,
+                                name: a.actor?.name ?? "Unknown User",
+                                action: "removed member from",
+                                target: a.project?.name,
+                                targetId: a.project?.id,
+                                createdAt: a.createdAt,
+                                category: a.type,
+                                isSystem: !a.actor,
+                                dateKey: a.createdAt.toISOString().split("T")[0],
+                            }
+                        case "TASK_UNASSIGNED":
+                            return {
+                                id: a.id,
+                                name: a.actor?.name ?? "Unknown User",
+                                action: "unassigned",
+                                target: a.task?.title,
+                                targetId: a.task?.id,
+                                createdAt: a.createdAt,
+                                category: a.type,
+                                isSystem: !a.actor,
+                                dateKey: a.createdAt.toISOString().split("T")[0],
+                            }
+                        case "TASK_DELETED":
+                            const meta = a.metadata as { taskTitle?: string } | null
+                            return {
+                                id: a.id,
+                                name: a.actor?.name ?? "Unknown User",
+                                action: "deleted task",
+                                target: meta?.taskTitle ?? "Unknown Task",
+                                targetId: undefined,
                                 createdAt: a.createdAt,
                                 category: a.type,
                                 isSystem: !a.actor,
