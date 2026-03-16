@@ -3,19 +3,17 @@
 import { EntityContainer, EntitySelect } from "@/app/components/entity-components"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
-import { Checkbox } from "@/components/ui/checkbox"
-import { Table, TableBody, TableCaption, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { LayoutGrid, List, PlusIcon } from "lucide-react"
 import { useState } from "react"
-import { Pagination, PaginationContent, PaginationEllipsis, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from "@/components/ui/pagination"
 import DialogTask, { Formtype } from "./dialog"
-import { useAccessibleProjects, useCreateTask, useMyProjects, useSuspenseTasks, useUpdateStatus } from "../hooks/use-tasks"
-import { TaskStatus } from "@/generated/prisma/enums"
-import { task } from "better-auth/react"
+import { useAccessibleProjects, useCreateTask, useMyProjects, useSuspenseTasks, useUpdatePriority, useUpdateStatus } from "../hooks/use-tasks"
+import { TaskPriority, TaskStatus } from "@/generated/prisma/enums"
 import Link from "next/link"
 import { KanbanBoard } from "./kanban/kanban-board"
 import { type TaskItem } from "../hooks/use-tasks"
+import { trpc } from "@/trpc/client"
 
 
 export const MytasksHeader = () => {
@@ -234,6 +232,7 @@ export const MyTasksTable = ({
 
 
     const { mutate: updateStatus } = useUpdateStatus()
+    const { mutate: updatePriority } = useUpdatePriority()
 
     return (
         <Card>
@@ -269,10 +268,32 @@ export const MyTasksTable = ({
                                 <TableCell className="font-semibold">{task.assignee?.name}</TableCell>
                                 <TableCell>{task.project?.name}</TableCell>
                                 <TableCell className={`flex items-center gap-3`}>
-                                    <span
-                                        className={`inline-block rounded-full w-2.5 h-2.5 ${PRIORITY_COLOR[task.priority]}`}
-                                    />
-                                    {task.priority}
+
+                                    {view === 'assignedByMe' ? (
+                                        <EntitySelect
+                                            value={task.priority}
+                                            onChange={(value) => updatePriority({
+                                                taskId: task.id,
+                                                priority: value as TaskPriority
+                                            })}
+                                            options={[
+                                                { label: "🔵 LOW", value: "LOW" },
+                                                { label: "🟡 MEDIUM", value: "MEDIUM" },
+                                                { label: "🔴 HIGH", value: "HIGH" },
+                                            ]}
+
+                                        />
+                                    ) : (
+                                        <div className="flex items-center gap-2">
+
+                                            <span
+                                                className={`inline-block rounded-full w-2.5 h-2.5 ${PRIORITY_COLOR[task.priority]}`}
+                                            />
+                                            {task.priority}
+                                        </div>
+                                    )}
+                                
+
                                 </TableCell>
                                 <TableCell>
                                     {task.dueDate

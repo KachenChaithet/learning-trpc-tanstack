@@ -104,6 +104,46 @@ export const TaskRouter = createTRPCRouter({
             })
 
         }),
+    updatePriority: protectedProcedure
+        .input(z.object({
+            taskId: z.string(),
+            priority: z.enum(["LOW", "MEDIUM", "HIGH"])
+        }))
+        .mutation(async ({ ctx, input }) => {
+            return prisma.$transaction(async (tx) => {
+                const task = await tx.task.findUnique({
+                    where: { id: input.taskId },
+                    select: { priority: true, projectId: true }
+                })
+
+                if (!task) throw new TRPCError({ code: "NOT_FOUND" })
+
+                const isMember = await tx.projectMember.findFirst({
+                    where: { projectId: task.projectId, userId: ctx.user.id }
+                })
+                if (!isMember) throw new TRPCError({ code: "FORBIDDEN" })
+
+                const updatedTask = await tx.task.update({
+                    where: { id: input.taskId },
+                    data: { priority: input.priority }
+                })
+
+                await tx.activityLog.create({
+                    data: {
+                        type: "TASK_PRIORITY_CHANGED",
+                        actorId: ctx.user.id,
+                        projectId: task.projectId,
+                        taskId: input.taskId,
+                        metadata: {
+                            from: task.priority,
+                            to: input.priority
+                        }
+                    }
+                })
+
+                return updatedTask
+            })
+        }),
     updateStatus: protectedProcedure
         .input(z.object({ taskId: z.string(), status: z.nativeEnum(TaskStatus) }))
         .mutation(async ({ ctx, input }) => {

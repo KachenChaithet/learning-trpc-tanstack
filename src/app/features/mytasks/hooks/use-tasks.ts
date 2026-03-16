@@ -114,6 +114,26 @@ export const useRemoveTask = () => {
     })
 }
 
+export const useUpdatePriority = () => {
+    const utils = trpc.useUtils()
+
+
+    return trpc.tasks.updatePriority.useMutation({
+        onSuccess: (data) => {
+            toast.success(`Update ${data.title} priority success`)
+            utils.tasks.getMany.invalidate()
+        },
+        onError: (err) => {
+            toast.error(err.message)
+            if (err.data?.code === "FORBIDDEN") {
+                toast.error("You don't have permission")
+                return
+            }
+
+        }
+    })
+}
+
 export const useDuplicateTask = () => {
     const utils = trpc.useUtils()
     const router = useRouter()
